@@ -25,12 +25,7 @@ export function Item(props: {
       color={() => (props.active?.() ? theme.text.primary : theme.text.secondary)}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
-      onPointerDown={(e) => {
-        if (e.button === 2 && props.onContextMenu) {
-          props.onContextMenu(e);
-          e.stop();
-        }
-      }}
+      onContextMenu={props.onContextMenu}
       onClick={props.onClick}
     >
       {props.children}

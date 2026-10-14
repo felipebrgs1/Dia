@@ -17,9 +17,10 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  isScreenshot,
   theme,
-  windowControls,
 } from "@nodebuilderjs/core";
+import appIcon from "./assets/dia.svg" with { type: "text" };
 import { type Fetcher, createCalendars } from "./calendars/store.js";
 import { BoardView } from "./components/BoardView.js";
 import { CalendarsDialog, ExternalEventDialog } from "./components/Calendars.js";
@@ -70,8 +71,8 @@ export function App(
   // instead of creating a vault on disk.
   const vault =
     props.vault ??
-    (process.env.NB_SCREENSHOT && !props.vaultPath ? memoryVault(welcomeNotes()) : openVault(props.vaultPath || defaultVaultPath()));
-  const demo = !!process.env.NB_SCREENSHOT && !props.vault && !props.vaultPath;
+    (isScreenshot() && !props.vaultPath ? memoryVault(welcomeNotes()) : openVault(props.vaultPath || defaultVaultPath()));
+  const demo = isScreenshot() && !props.vault && !props.vaultPath;
   if (demo) {
     // Screenshots show an example external calendar, from the cache (no network).
     vault.writeMeta("config.json", JSON.stringify({ calendars: [{ id: "demo", name: "Trabalho (Google)", url: "https://exemplo", color: "#3b82f6", enabled: true }] }));
@@ -89,10 +90,6 @@ export function App(
   if (props.view) ui.setView(props.view);
   if (props.calendarsOpen) ui.setCalendarsOpen(true);
 
-  createEffect(() => {
-    const path = ws.active();
-    windowControls.setTitle(ui.view() === "editor" && path ? `${noteName(path)} — Dia` : "Dia");
-  });
   process.on("exit", () => ws.flush());
 
   const text = createMemo(() => {
@@ -120,7 +117,7 @@ export function App(
   };
 
   const shortcuts = (e: { key: string; ctrl: boolean; shift: boolean; alt: boolean; stop(): void }) => {
-    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const key = e.key; // with Ctrl or Alt, letters arrive lowercase
     if (e.ctrl && (key === "o" || key === "p" || key === "k")) ui.setSwitcher(true);
     else if (e.ctrl && key === "n") newNote();
     else if (e.ctrl && key === "d") openToday();
@@ -322,7 +319,10 @@ export function App(
   );
 
   return (
-    <Window title="Dia" appId="dev.nodebuilder.dia" width={1320} height={840} decorations={false} onClose={() => void ws.flush()} onKeyDown={shortcuts}>
+    <Window
+      title={() => (ui.view() === "editor" && ws.active() ? `${noteName(ws.active()!)} — Dia` : "Dia")}
+      icon={appIcon}
+      appId="dev.nodebuilder.dia" width={1320} height={840} decorations={false} onClose={() => void ws.flush()} onKeyDown={shortcuts}>
       <TitleBar />
       <Line />
       <Row grow={1}>

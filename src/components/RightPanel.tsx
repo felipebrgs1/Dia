@@ -3,7 +3,7 @@
 import { Column, For, Icon, Match, Row, Scroll, Switch, Text, createMemo, theme } from "@nodebuilderjs/core";
 import { fileText, link as linkIcon, listTree } from "../icons.js";
 import type { Ui } from "../ui.js";
-import { noteName } from "../vault/markdown.js";
+import { noteName, plainText } from "../vault/markdown.js";
 import type { Workspace } from "../workspace.js";
 import { IconButton, Item } from "./Item.js";
 
@@ -48,7 +48,7 @@ export function RightPanel(props: { ws: Workspace; ui: Ui }) {
                 <Item onClick={() => go(b.path, b.offset)}>
                   <Column gap={2} grow={1}>
                     <Text bold maxLines={1} color={() => theme.text.primary}>{noteName(b.path)}</Text>
-                    <Text fontSize={12} maxLines={2}>{b.line}</Text>
+                    <Text fontSize={12} maxLines={2}>{plainText(b.line.replace(/^\s*[-*+] (\[.\] )?/, ""))}</Text>
                   </Column>
                 </Item>
               )}

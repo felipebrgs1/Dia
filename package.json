@@ -11,10 +11,11 @@
     "package": "nodebuilder package src/main.tsx --title \"Dia\" --app-id dev.nodebuilder.dia",
     "screenshot": "nodebuilder screenshot src/main.tsx screenshot.png",
     "doctor": "nodebuilder doctor",
-    "icons:add": "nodebuilder icons add --out src/icons.ts"
+    "icons:add": "nodebuilder icons add --out src/icons.ts",
+    "agents:update": "nodebuilder agents update"
   },
   "dependencies": {
-    "@nodebuilderjs/core": "^0.4.0",
+    "@nodebuilderjs/core": "^0.4.1",
     "ical.js": "^2.2.1",
     "lucide-static": "^1.57.0"
   },

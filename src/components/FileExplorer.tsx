@@ -111,8 +111,8 @@ export function FileExplorer(props: { ws: Workspace; ui: Ui }) {
       </Scroll>
       <Show when={menu}>
         {(m) => (
-          <Overlay onDismiss={() => setMenu(null)}>
-            <Card position="absolute" left={m().x} top={m().y} padding={4} gap={0} width={190} background={() => colors.sidebar} shadow={{ color: "#00000050", blur: 16, y: 4 }}>
+          <Overlay at={{ x: m().x, y: m().y }} onDismiss={() => setMenu(null)}>
+            <Card padding={4} gap={0} width={190} background={() => colors.sidebar} shadow={{ color: "#00000050", blur: 16, y: 4 }}>
               <Show
                 when={() => m().node.folder}
                 fallback={

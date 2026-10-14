@@ -177,15 +177,14 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
           } else setDrag({ ...d, end: clamp(ev.end + delta, ev.start + SNAP, DAY), moved: true });
         }}
       >
-        {/* Absolute children sit inside the padding: pull them back to the edges. */}
-        <Box position="absolute" left={-9} top={-3} width={3} height={box.height} background={() => colors.eventBar} />
+        <Box position="absolute" left={0} top={0} width={3} height={box.height} background={() => colors.eventBar} />
         <Text fontSize={12} bold maxLines={box.height > 40 ? 2 : 1} color={() => (ev.done ? theme.text.secondary : theme.text.primary)}>
           {plainText(ev.title) || "(sem título)"}
         </Text>
         <Show when={box.height > 30}>
           <Text fontSize={11} maxLines={1} color={() => theme.text.secondary}>{`${formatTime(ev.start)} – ${formatTime(ev.end)}`}</Text>
         </Show>
-        <Box position="absolute" left={-9} bottom={-3} width={() => colWidth()} height={7} cursor="s-resize" />
+        <Box position="absolute" left={0} right={0} bottom={0} height={7} cursor="s-resize" />
       </Column>
     );
   };
@@ -211,7 +210,7 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
         onPointerDown={(e) => e.stop()}
         onClick={() => ui.setExternalDetail(ev)}
       >
-        <Box position="absolute" left={-9} top={-3} width={3} height={box.height} background={() => colorOf(ev)} />
+        <Box position="absolute" left={0} top={0} width={3} height={box.height} background={() => colorOf(ev)} />
         <Text fontSize={12} bold maxLines={box.height > 40 ? 2 : 1}>{ev.title}</Text>
         <Show when={box.height > 30}>
           <Text fontSize={11} maxLines={1} color={() => theme.text.secondary}>

@@ -1,7 +1,7 @@
 // Dia's colors: warm paper and amber, light first, with a warm dark mode. Read them inside
 // functions (`background={() => colors.sidebar}`): each getter follows setTheme().
 
-import { colorScheme, darkTheme, lightTheme, setTheme, theme } from "@nodebuilderjs/core";
+import { createThemeTokens, darkTheme, lightTheme, setTheme, theme } from "@nodebuilderjs/core";
 import type { Role } from "./editor/layout.js";
 
 const light = {
@@ -59,10 +59,7 @@ const dark: typeof light = {
   graphEdge: "#fff3d626",
 };
 
-export const colors = {} as typeof light;
-for (const key of Object.keys(light) as (keyof typeof light)[]) {
-  Object.defineProperty(colors, key, { get: () => (colorScheme() === "dark" ? dark : light)[key] });
-}
+export const colors = createThemeTokens({ light, dark });
 
 /** Text color of a role from the editor layout. */
 export function roleColor(role: Role): string {

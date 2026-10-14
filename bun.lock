@@ -5,7 +5,7 @@
     "": {
       "name": "obsidian",
       "dependencies": {
-        "@nodebuilderjs/core": "^0.4.0",
+        "@nodebuilderjs/core": "^0.4.1",
         "ical.js": "^2.2.1",
         "lucide-static": "^1.57.0",
       },
@@ -16,9 +16,9 @@
     },
   },
   "packages": {
-    "@nodebuilderjs/core": ["@nodebuilderjs/core@0.4.0", "", { "optionalDependencies": { "@nodebuilderjs/linux-x64": "0.4.0" }, "bin": { "nodebuilder": "cli/nodebuilder.ts" } }, "sha512-UI6tOFpFMXNs1D5gx/POJhUYDcMr3tVyluIC/SfruDYevtnFp8E2bMBBIAr8YLhttGUDF0+BrnqInJzMgy4Vfg=="],
+    "@nodebuilderjs/core": ["@nodebuilderjs/core@0.4.1", "", { "optionalDependencies": { "@nodebuilderjs/linux-x64": "0.4.1" }, "bin": { "nodebuilder": "cli/nodebuilder.ts" } }, "sha512-jkuOLTHKTyun5sTvj0gVDHp8qt8oR9Ut/TXqtA6y0fnz14ryumvPQJF9qR3MpEExKQpXZVN9yNGZj7asogPmTw=="],
 
-    "@nodebuilderjs/linux-x64": ["@nodebuilderjs/linux-x64@0.4.0", "", { "os": "linux", "cpu": "x64" }, "sha512-L6eeCtY0FqYjZ6DYaSoj8SUYn5gPuZrV9UGlfAxpwV2Tsjr0whts33VSR3U3KnptKX7odAB5SC3aYfNYJRy7Gw=="],
+    "@nodebuilderjs/linux-x64": ["@nodebuilderjs/linux-x64@0.4.1", "", { "os": "linux", "cpu": "x64" }, "sha512-rRHD36vQKmU/jj1WMuFgqchLwRd4EZQ/gznkbo+469HcU0e7A6j8N//TKJ8rkOp0+hJ0VtrX2chaPMAHbG8xZA=="],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 

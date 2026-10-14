@@ -1,6 +1,7 @@
-// Multi-line markdown editor. nodebuilder's TextField is single-line, so this one draws the
-// text itself on a <Canvas> (from the layout in layout.ts) and handles keys and the mouse
-// on the Box around it. The caret is a separate small Box, so blinking does not redraw text.
+// Multi-line markdown editor with styled source (headings, links, code...). nodebuilder's
+// TextArea edits plain text; this one draws the text itself on a <Canvas> (from the layout in
+// layout.ts), only the rows on screen, and handles keys and the mouse on the Box around it.
+// The caret is a separate small Box, so blinking does not redraw text.
 
 import {
   Box,
@@ -16,12 +17,13 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  measureText,
   onCleanup,
   theme,
   untrack,
 } from "@nodebuilderjs/core";
 import { colors, roleColor } from "../theme.js";
-import { type DocLayout, type Measure, caretRect, hitTest, layoutDocument, offsetInRow, rowAt, segmentAt, xInRow } from "./layout.js";
+import { type DocLayout, type Measure, caretRect, hitTest, layoutDocument, offsetInRow, rowAt, rowAtY, segmentAt, xInRow } from "./layout.js";
 import { createDocument } from "./model.js";
 
 export interface EditorApi {
@@ -53,19 +55,20 @@ export function Editor(props: {
 }) {
   const doc = createDocument();
 
-  // Measuring: the real text measurer is only reachable from a Canvas draw, so until the
-  // first draw an estimate is used; then the layout is computed again with real widths.
-  let rawMeasure: Measure = (t, size) => ({ width: t.length * size * 0.55, height: Math.round(size * 1.25) });
-  const fontOf = (font?: { italic?: boolean; mono?: boolean }) => ({ italic: font?.italic, family: font?.mono ? MONO : undefined });
-  let realMetrics = false;
-  const [metrics, setMetrics] = createSignal(0);
+  // Widths of pieces of text, cached: the layout measures every prefix of every word.
+  const fontOf = (bold: boolean, font?: { italic?: boolean; mono?: boolean }) => ({
+    weight: bold ? 700 : 400,
+    italic: !!font?.italic,
+    family: font?.mono ? MONO : "",
+  });
   const cache = new Map<string, { width: number; height: number }>();
   const measure: Measure = (t, size, bold, font) => {
     const key = `${size}${bold ? "b" : "r"}${font?.italic ? "i" : ""}${font?.mono ? "m" : ""}|${t}`;
     let m = cache.get(key);
     if (!m) {
       if (cache.size > 200_000) cache.clear();
-      m = rawMeasure(t, size, bold, font);
+      const r = measureText(t, size, fontOf(bold, font));
+      m = { width: r.width, height: r.ascent + r.descent };
       cache.set(key, m);
     }
     return m;
@@ -78,10 +81,7 @@ export function Editor(props: {
   const [hoverLink, setHoverLink] = createSignal(false);
   const width = () => Math.max(160, Math.min(MAX_WIDTH, viewWidth() - SIDE_PADDING * 2));
 
-  const layout = createMemo<DocLayout>(() => {
-    metrics();
-    return layoutDocument(doc.text(), width(), measure, FONT_SIZE);
-  });
+  const layout = createMemo<DocLayout>(() => layoutDocument(doc.text(), width(), measure, FONT_SIZE));
 
   let scroller: ElementRef | undefined;
   let box: ElementRef | undefined;
@@ -125,22 +125,16 @@ export function Editor(props: {
 
   const caret = createMemo(() => caretRect(layout(), doc.head()));
 
-  /** Scrolls the minimum needed for the caret to show. */
+  /** Scrolls the minimum needed for the caret (with a margin) to show. */
   const reveal = () => {
-    if (!scroller || !box) return;
     const c = untrack(caret);
-    const top = box.y - scroller.y + scroller.scrollY + c.y;
-    const margin = 24;
-    if (top - margin < scroller.scrollY) scroller.scrollTo(Math.max(0, top - margin));
-    else if (top + c.height + margin > scroller.scrollY + scroller.height) scroller.scrollTo(top + c.height + margin - scroller.height);
+    box?.scrollIntoView({ x: c.x, y: c.y - 24, width: 2, height: c.height + 48 });
   };
 
   const goto = (offset: number) => {
     doc.moveTo(offset);
     box?.focus();
-    // After the next layout, the box has its position.
-    queueMicrotask(reveal);
-    setTimeout(reveal, 16);
+    reveal();
   };
 
   // After goto exists: opening a note with a target offset (search hit, daily note) jumps there.
@@ -169,9 +163,14 @@ export function Editor(props: {
     const L = layout();
     const at = hitTest(L, e.localX, e.localY);
     goalX = null;
-    if (e.clicks === 1) {
+    if (e.shift) {
+      doc.moveTo(at, true);
+      dragging = true;
+      return;
+    }
+    if (e.clicks === 1 && !e.ctrl) {
       const seg = segmentAt(L, e.localX, e.localY);
-      // Clicking the link text follows it; clicking the brackets puts the caret there.
+      // Clicking a link follows it; Ctrl+click (or the brackets) puts the caret there to edit it.
       if (seg && seg.style.role === "link" && (seg.link || seg.url)) return follow(seg);
       const ls = doc.lineStart(at);
       const task = TASK.exec(doc.text().slice(ls, doc.lineEnd(at)));
@@ -196,7 +195,7 @@ export function Editor(props: {
       return;
     }
     const seg = segmentAt(L, e.localX, e.localY);
-    setHoverLink(!!seg && seg.style.role === "link" && !!(seg.link || seg.url));
+    setHoverLink(!e.ctrl && !!seg && seg.style.role === "link" && !!(seg.link || seg.url));
   };
 
   // ---- Keyboard -----------------------------------------------------------------------
@@ -225,9 +224,9 @@ export function Editor(props: {
   };
 
   const onKeyDown = (e: KeyEvent) => {
-    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const key = e.key; // with Ctrl, letters arrive lowercase
     const shift = e.shift;
-    const keepGoal = key === "Up" || key === "Down" || key === "Prior" || key === "Next";
+    const keepGoal = key === "Up" || key === "Down" || key === "Page_Up" || key === "Page_Down";
     if (!keepGoal) goalX = null;
 
     if (e.ctrl) {
@@ -240,8 +239,7 @@ export function Editor(props: {
         case "y": doc.redo(); break;
         case "b": doc.wrap("**"); break;
         case "i": doc.wrap("*"); break;
-        case "Return":
-        case "KP_Enter": {
+        case "Return": {
           const link = linkAt(doc.head());
           if (link) props.onOpenLink(link);
           break;
@@ -272,10 +270,10 @@ export function Editor(props: {
         break;
       case "Up": vertical(-1, shift); break;
       case "Down": vertical(1, shift); break;
-      case "Prior":
-      case "Next": {
+      case "Page_Up":
+      case "Page_Down": {
         const page = Math.max(1, Math.floor((scroller?.height ?? viewHeight()) / (FONT_SIZE * 1.6)) - 2);
-        vertical(key === "Prior" ? -page : page, shift);
+        vertical(key === "Page_Up" ? -page : page, shift);
         break;
       }
       case "Home": {
@@ -289,12 +287,9 @@ export function Editor(props: {
         break;
       }
       case "BackSpace": doc.backspace(); break;
-      case "Delete":
-      case "KP_Delete": doc.deleteForward(); break;
-      case "Return":
-      case "KP_Enter": doc.newline(); break;
+      case "Delete": doc.deleteForward(); break;
+      case "Return": doc.newline(); break;
       case "Tab": shift ? doc.outdent() : doc.indent(); break;
-      case "ISO_Left_Tab": doc.outdent(); break;
       case "Escape": return;
       default: {
         if (!e.text) return;
@@ -315,13 +310,11 @@ export function Editor(props: {
   // ---- Drawing ------------------------------------------------------------------------
 
   const draw = (g: DrawContext) => {
-    if (!realMetrics) {
-      realMetrics = true;
-      rawMeasure = (t, size, bold, font) => g.measureText(t, size, bold, fontOf(font));
-      cache.clear();
-      queueMicrotask(() => setMetrics(1));
-    }
     const L = layout();
+    // Only the rows on screen are drawn (reading visibleRect redraws on scroll).
+    const view = g.visibleRect;
+    const top = view.y - 40;
+    const bottom = view.y + view.height + 40;
     const [from, to] = doc.selection();
 
     // Blocks: code (one rounded box per run of lines), quotes and horizontal rules.
@@ -356,7 +349,9 @@ export function Editor(props: {
       }
     }
 
-    for (const row of L.rows) {
+    for (let r = rowAtY(L, Math.max(0, top)); r < L.rows.length; r++) {
+      const row = L.rows[r]!;
+      if (row.y > bottom) break;
       for (const s of row.segments) {
         const h = measure("Ag", s.style.size, s.style.bold, s.style).height;
         const y = row.y + Math.round((row.height - h) / 2);
@@ -366,7 +361,7 @@ export function Editor(props: {
           g.rect(s.x - 2, y - 1, w + 4, h + 2, s.style.bg === "code" ? colors.codeBg : colors.highlight, 3);
         }
         if (!visible) continue;
-        g.text(s.display, s.x, y, roleColor(s.style.role), s.style.size, s.style.bold, fontOf(s.style));
+        g.text(s.display, s.x, y, roleColor(s.style.role), s.style.size, s.style.bold, fontOf(s.style.bold, s.style));
         if (s.style.role === "strike") g.rect(s.x, y + h / 2, s.xs[visible.length] ?? s.width, 1, theme.text.secondary);
       }
     }

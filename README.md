@@ -2,7 +2,7 @@
 
 Central de produtividade para Linux: notas em markdown no estilo do Obsidian, tarefas e
 calendário com notas diárias, num visual claro e quente (com tema escuro). Feito com
-[nodebuilder](https://www.npmjs.com/package/@nodebuilderjs/core) 0.4: TSX com reatividade estilo
+[nodebuilder](https://www.npmjs.com/package/@nodebuilderjs/core) 0.4.1: TSX com reatividade estilo
 SolidJS, desenhado por um core nativo (Wayland/X11 + GLES), sem DOM nem Electron.
 
 ```sh
