@@ -94,7 +94,9 @@ if [ -n "${DIA_INSTALL_FILE:-}" ]; then
   cp "$DIA_INSTALL_FILE" "$tmp/dia.tar.gz"
 else
   if [ -z "$version" ]; then
-    version="$(fetch_text "https://api.github.com/repos/$REPO/releases/latest" | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)"
+    # The whole answer first: cutting the download short (grep -m1) makes curl print an error.
+    latest="$(fetch_text "https://api.github.com/repos/$REPO/releases/latest" || true)"
+    version="$(printf '%s\n' "$latest" | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)"
     [ -n "$version" ] || die "não consegui descobrir a última versão (sem internet, ou nenhum release publicado)."
   fi
   case "$version" in v*) ;; *) version="v$version" ;; esac
