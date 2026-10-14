@@ -4,6 +4,8 @@
 import { batch, createMemo, createSignal, untrack } from "@nodebuilderjs/core";
 import { type Heading, type Task, type WikiLink, folderOf, noteName, parseHeadings, parseLinks, parseTags, parseTasks, renameLinks, resolveLink, toggleTaskAt } from "./vault/markdown.js";
 import { DAILY_FOLDER, dailyTemplate } from "./vault/welcome.js";
+import { type DayEvent, eventLine, formatTime, insertEvent, parseEvents, removeLine, setEventTime, setEventTitle } from "./vault/events.js";
+import { dailyDateOf } from "./dates.js";
 import type { Vault } from "./vault/vault.js";
 
 export interface SearchHit {
@@ -24,7 +26,11 @@ interface Parsed {
   headings: Heading[];
   tags: string[];
   tasks: Task[];
+  events: DayEvent[];
 }
+
+/** An event with the day and note it lives in. */
+export type VaultEvent = DayEvent & { path: string; date: string };
 
 export type VaultTask = Task & { path: string };
 
@@ -68,7 +74,7 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
     const text = texts.get(path) ?? "";
     const cached = parsed.get(path);
     if (cached?.text === text) return cached;
-    const p = { text, links: parseLinks(text), headings: parseHeadings(text), tags: parseTags(text), tasks: parseTasks(text) };
+    const p = { text, links: parseLinks(text), headings: parseHeadings(text), tags: parseTags(text), tasks: parseTasks(text), events: parseEvents(text) };
     parsed.set(path, p);
     return p;
   };
@@ -122,6 +128,19 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
     for (const p of paths) out.set(p, parse(p).links.map((link) => ({ link, to: resolveLink(link.target, paths) })));
     return out;
   });
+
+  /** The daily note of a day, created from the template if missing. */
+  const ensureDaily = (iso: string) => {
+    const path = `${DAILY_FOLDER}/${iso}.md`;
+    if (!texts.has(path)) {
+      const text = dailyTemplate(iso);
+      vault.write(path, text);
+      texts.set(path, text);
+      touched.set(path, Date.now());
+      refresh();
+    }
+    return path;
+  };
 
   const lineAround = (text: string, offset: number) => {
     const s = text.lastIndexOf("\n", offset - 1) + 1;
@@ -276,18 +295,42 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
       return [...files()].sort((a, b) => (touched.get(b) ?? 0) - (touched.get(a) ?? 0)).slice(0, limit);
     },
 
+    /** Timed events of every daily note. */
+    events(): VaultEvent[] {
+      version();
+      return files().flatMap((path) => {
+        const date = dailyDateOf(path);
+        return date ? parse(path).events.map((e) => ({ ...e, path, date })) : [];
+      });
+    },
+    /** Adds an event to a day's note (created if needed). */
+    addEvent(date: string, start: number, end: number, title: string) {
+      const path = ensureDaily(date);
+      ws.write(path, insertEvent(texts.get(path)!, `- ${formatTime(start)} - ${formatTime(end)} ${title.trim() || "Novo evento"}`));
+    },
+    /** New time and/or day; a new day moves the line to that day's note. */
+    moveEvent(ev: VaultEvent, date: string, start: number, end: number) {
+      const text = texts.get(ev.path) ?? "";
+      if (date === ev.date) return ws.write(ev.path, setEventTime(text, ev.offset, start, end));
+      const line = eventLine(setEventTime(text, ev.offset, start, end), ev.offset);
+      batch(() => {
+        ws.write(ev.path, removeLine(text, ev.offset));
+        const target = ensureDaily(date);
+        ws.write(target, insertEvent(texts.get(target)!, line));
+      });
+    },
+    renameEvent(ev: VaultEvent, title: string) {
+      ws.write(ev.path, setEventTitle(texts.get(ev.path) ?? "", ev.offset, title));
+    },
+    deleteEvent(ev: VaultEvent) {
+      ws.write(ev.path, removeLine(texts.get(ev.path) ?? "", ev.offset));
+    },
+
     dailyPath: (iso: string) => `${DAILY_FOLDER}/${iso}.md`,
     hasNote: (path: string) => (version(), texts.has(path)),
     /** Opens the daily note of a day ("YYYY-MM-DD"), creating it from the template. */
     openDaily(iso: string) {
-      const path = ws.dailyPath(iso);
-      if (!texts.has(path)) {
-        const text = dailyTemplate(iso);
-        vault.write(path, text);
-        texts.set(path, text);
-        touched.set(path, Date.now());
-        refresh();
-      }
+      const path = ensureDaily(iso);
       // The caret goes to the empty first task, ready to type.
       const text = texts.get(path)!;
       const empty = text.indexOf("- [ ] \n");

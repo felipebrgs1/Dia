@@ -7,7 +7,7 @@ export const DAILY_FOLDER = "Diário";
 
 /** A new daily note. */
 export function dailyTemplate(iso: string) {
-  return `# ${longDate(iso)}\n\n## Tarefas\n- [ ] \n\n## Notas\n`;
+  return `# ${longDate(iso)}\n\n## Agenda\n\n## Tarefas\n- [ ] \n\n## Notas\n`;
 }
 
 export function welcomeNotes(day = today()): Record<string, string> {
@@ -16,7 +16,7 @@ export function welcomeNotes(day = today()): Record<string, string> {
 
 ## Comece por aqui
 - A tela **Hoje** mostra a nota do dia, as tarefas abertas e o mês.
-- No **Calendário**, cada dia tem a sua nota diária. Clique num dia para abrir.
+- No **Calendário**, cada dia tem a sua nota diária. Na **Semana**, arraste num horário vazio para criar um evento; arraste um evento para mudar dia e hora, ou a borda de baixo para mudar a duração.
 - Crie uma nota com **Ctrl+N** e abra qualquer uma com **Ctrl+O**.
 - Ligue notas com [[Links e tarefas|colchetes duplos]] e veja tudo no grafo (**Ctrl+G**).
 
@@ -30,6 +30,8 @@ export function welcomeNotes(day = today()): Record<string, string> {
 #inicio
 `,
     "Links e tarefas.md": `Escreva \`[[Nome da nota]]\` para ligar notas; o painel da direita mostra quem aponta para cada uma.
+
+Eventos ficam na seção "Agenda" das notas diárias, como \`- 14:00 - 15:30 Reunião\` (o mesmo formato do plugin Day Planner do Obsidian).
 
 Tarefas são linhas \`- [ ] \`. Para dar um prazo, termine com \`📅 AAAA-MM-DD\` (ou \`@AAAA-MM-DD\`): ela aparece no dia certo do calendário.
 
@@ -50,9 +52,25 @@ Ideias soltas: ==destaque==, *ênfase*, ~~riscado~~ e #ideias.
 `,
     [`${DAILY_FOLDER}/${day}.md`]: `# ${longDate(day)}
 
+## Agenda
+- 09:00 - 10:00 Planejar o dia
+- 12:30 - 13:30 Almoço
+- [ ] 15:00 - 16:30 Revisar o [[Projetos/Dia|projeto]]
+
 ## Tarefas
 - [ ] Conhecer o [[Bem-vindo ao Dia|Dia]]
 - [ ] Criar a primeira nota
+
+## Notas
+`,
+    [`${DAILY_FOLDER}/${addDays(day, 1)}.md`]: `# ${longDate(addDays(day, 1))}
+
+## Agenda
+- 10:00 - 11:00 Reunião de equipe
+- 16:00 - 17:00 Academia
+
+## Tarefas
+- [ ] 
 
 ## Notas
 `,

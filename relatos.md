@@ -158,7 +158,18 @@ incluir o nome do componente em que o efeito foi criado.
 
 ## Baixa
 
-### 12. Título do `Window` não é reativo
+### 12. Filhos `position="absolute"` ficam dentro do padding do pai
+
+No CSS, `left: 0` de um filho absoluto é a borda do pai (padding box). Aqui é o início do
+conteúdo, depois do padding. Uma faixa colorida em `left={0}` de um card com
+`padding={[3, 6, 3, 9]}` apareceu por cima do texto, e não na borda.
+
+**Contorno** (`src/components/WeekView.tsx`): `left={-9} top={-3}`, o padding em negativo.
+
+**Sugestão:** documentar na skill (seção de layout e na `nodebuilder-from-react`), ou seguir o
+CSS.
+
+### 13. Título do `Window` não é reativo
 
 `title` é uma `string`, não aceita accessor. Usei `windowControls.setTitle` num efeito
 (`src/App.tsx`). Desde a 0.3 dá para fazer a barra de título própria (`decorations={false}`),
@@ -166,7 +177,7 @@ o que resolve o resto.
 
 **Sugestão:** `title` como `MaybeAccessor<string>`.
 
-### 13. Menu de contexto na posição do mouse
+### 14. Menu de contexto na posição do mouse
 
 O clique direito está documentado (`onPointerDown` com `button === 2`), mas não há `Overlay`
 ancorado num ponto.
@@ -176,7 +187,7 @@ ancorado num ponto.
 
 **Sugestão:** `<Overlay at={{ x, y }}>`, com o mesmo reposicionamento do `anchor`.
 
-### 14. Ctrl+letra pode chegar maiúscula ou minúscula
+### 15. Ctrl+letra pode chegar maiúscula ou minúscula
 
 Com Ctrl, `text` vem vazio e a letra em `key` pode vir maiúscula (com Shift ou Caps Lock): o
 próprio `TextField` testa `"v"` e `"V"`, e o app precisa fazer o mesmo.

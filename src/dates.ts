@@ -42,6 +42,18 @@ export function shortDate(iso: string) {
   return `${d.getDate()} ${MONTHS[d.getMonth()]!.slice(0, 3)}`;
 }
 
+/** The day of a daily note ("Diário/2026-10-14.md" → "2026-10-14"), or null. */
+export function dailyDateOf(path: string) {
+  const m = /(?:^|\/)(\d{4}-\d{2}-\d{2})\.md$/.exec(path);
+  return m && parseIso(m[1]!) ? m[1]! : null;
+}
+
+/** The 7 days (Sunday first) of the week containing `iso`. */
+export function weekOf(iso: string) {
+  const d = parseIso(iso)!;
+  return Array.from({ length: 7 }, (_, i) => isoDate(new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay() + i)));
+}
+
 /** How a note is named in lists: daily notes by their day ("Hoje", "Ontem", "14 out"). */
 export function noteLabel(path: string) {
   const m = /(?:^|\/)(\d{4}-\d{2}-\d{2})\.md$/.exec(path);

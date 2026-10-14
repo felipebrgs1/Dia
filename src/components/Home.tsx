@@ -3,10 +3,11 @@
 
 import { Box, Button, Card, type Child, Column, For, Icon, Row, Scroll, Show, Text, createMemo, theme } from "@nodebuilderjs/core";
 import { greeting, longDate, noteLabel, shortDate, today } from "../dates.js";
-import { clock, fileText, listTodo, notebookPen } from "../icons.js";
+import { calendarDays, clock, fileText, listTodo, notebookPen } from "../icons.js";
+import { formatTime } from "../vault/events.js";
 import { colors } from "../theme.js";
 import type { Ui } from "../ui.js";
-import { folderOf } from "../vault/markdown.js";
+import { folderOf, plainText } from "../vault/markdown.js";
 import type { VaultTask, Workspace } from "../workspace.js";
 import { MonthGrid, MonthHeader, dayIndex } from "./Calendar.js";
 import { TaskRow } from "./Tasks.js";
@@ -125,6 +126,35 @@ export function Home(props: { ws: Workspace; ui: Ui }) {
                   <Button label="Abrir" variant="flat" onClick={() => openDay(ui.selectedDay())} />
                 </Row>
               </Card>
+              <Section icon={calendarDays} title="Agenda de hoje">
+                <Column gap={6}>
+                  <For
+                    each={() => days().get(day)?.events ?? []}
+                    fallback={<Text fontSize={13} color={() => theme.text.secondary}>Nada na agenda. No Calendário (Semana), arraste num horário para criar um evento.</Text>}
+                  >
+                    {(e) => {
+                      const past = () => e.end <= new Date().getHours() * 60 + new Date().getMinutes();
+                      return (
+                        <Row
+                          gap={10}
+                          padding={[6, 8]}
+                          radius={6}
+                          cursor="pointer"
+                          background={() => colors.event}
+                          opacity={() => (past() ? 0.55 : 1)}
+                          onClick={() => (ui.setView("editor"), ws.open(e.path, { offset: e.offset }))}
+                        >
+                          <Box width={3} radius={2} background={() => colors.eventBar} />
+                          <Column grow={1} gap={1}>
+                            <Text bold maxLines={1}>{plainText(e.title)}</Text>
+                            <Text fontSize={12} color={() => theme.text.secondary}>{`${formatTime(e.start)} – ${formatTime(e.end)}`}</Text>
+                          </Column>
+                        </Row>
+                      );
+                    }}
+                  </For>
+                </Column>
+              </Section>
             </Column>
           </Row>
         </Column>

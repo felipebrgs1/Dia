@@ -199,3 +199,41 @@ test("the editor document takes outside changes and keeps the caret", () => {
   doc.undo();
   expect(doc.text()).toBe("- [ ] um\nfim");
 });
+
+test("events: parsed from daily notes, rewritten in place, placed side by side", async () => {
+  const ev = await import("../src/vault/events.js");
+  const text = "# Dia\n\n## Agenda\n- 09:00 - 10:30 Planejar\n- [ ] 14:00 Ligar\n* 8:15–9:00 Café\n\n## Notas\n- 25:00 não é hora";
+  const list = ev.parseEvents(text);
+  expect(list.map((e) => [e.start, e.end, e.title, e.done])).toEqual([
+    [495, 540, "Café", undefined],
+    [540, 630, "Planejar", undefined],
+    [840, 870, "Ligar", false],
+  ]);
+  const planejar = list[1]!;
+  expect(ev.setEventTime(text, planejar.offset, 600, 660)).toContain("- 10:00 - 11:00 Planejar");
+  expect(ev.setEventTitle(text, planejar.offset, "Planejar a semana")).toContain("- 09:00 - 10:30 Planejar a semana");
+  expect(ev.removeLine(text, planejar.offset)).not.toContain("Planejar");
+
+  // New events go into "## Agenda" in time order; the section is created when missing.
+  expect(ev.insertEvent(text, "- 12:00 - 13:00 Almoço").split("\n").slice(3, 6)).toEqual([
+    "- 09:00 - 10:30 Planejar",
+    "- 12:00 - 13:00 Almoço",
+    "- [ ] 14:00 Ligar",
+  ]);
+  expect(ev.insertEvent("# Dia\n\n## Notas\n", "- 08:00 - 09:00 X")).toBe("# Dia\n\n## Agenda\n- 08:00 - 09:00 X\n\n## Notas\n");
+
+  const placed = ev.placeEvents([{ start: 0, end: 60 }, { start: 30, end: 90 }, { start: 60, end: 120 }, { start: 200, end: 230 }]);
+  expect(placed.map((p) => [p.lane, p.lanes])).toEqual([[0, 2], [1, 2], [0, 2], [0, 1]]);
+});
+
+test("workspace: events move between days and are created in daily notes", () => {
+  const vault = memoryVault({ "Diário/2026-10-14.md": "# Q\n\n## Agenda\n- 09:00 - 10:00 Reunião\n" });
+  const ws = createWorkspace(vault, { saveDelay: 0 });
+  const [reuniao] = ws.events();
+  expect(reuniao).toMatchObject({ date: "2026-10-14", start: 540, title: "Reunião" });
+  ws.moveEvent(reuniao!, "2026-10-15", 600, 660);
+  expect(ws.read("Diário/2026-10-14.md")).not.toContain("Reunião");
+  expect(ws.read("Diário/2026-10-15.md")).toContain("## Agenda\n- 10:00 - 11:00 Reunião");
+  ws.addEvent("2026-10-15", 480, 510, "Café");
+  expect(ws.events().map((e) => `${e.date} ${e.start} ${e.title}`)).toEqual(["2026-10-15 480 Café", "2026-10-15 600 Reunião"]);
+});

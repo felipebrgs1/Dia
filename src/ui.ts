@@ -7,6 +7,7 @@ import type { EditorApi } from "./editor/Editor.js";
 export type LeftTab = "files" | "search" | "tags";
 export type RightTab = "backlinks" | "outgoing" | "outline";
 export type View = "home" | "calendar" | "editor" | "graph";
+export type CalendarMode = "month" | "week";
 
 export function createUi() {
   const [leftTab, setLeftTab] = createSignal<LeftTab>("files");
@@ -18,6 +19,7 @@ export function createUi() {
   const now = new Date();
   const [month, setMonth] = createSignal({ year: now.getFullYear(), month: now.getMonth() });
   const [selectedDay, setSelectedDay] = createSignal(today());
+  const [calendarMode, setCalendarMode] = createSignal<CalendarMode>("week");
   const [switcher, setSwitcher] = createSignal(false);
   const [renaming, setRenaming] = createSignal<string | null>(null);
   const [deleting, setDeleting] = createSignal<string | null>(null);
@@ -30,6 +32,7 @@ export function createUi() {
     rightTab, setRightTab, rightOpen, setRightOpen,
     view, setView,
     month, setMonth,
+    calendarMode, setCalendarMode,
     selectedDay,
     /** Selects a day and shows its month. */
     setSelectedDay(iso: string) {

@@ -27,8 +27,12 @@ Notas de exemplo só são criadas quando a pasta ainda não existe.
 
 - **Hoje**: saudação, nota do dia, tarefas abertas de todas as notas (marcar aqui grava na
   nota), mini calendário e notas recentes.
-- **Calendário**: mês inteiro; cada dia tem sua nota diária (`Diário/AAAA-MM-DD.md`) e mostra
-  as tarefas do dia e as com prazo `📅 AAAA-MM-DD` (ou `@AAAA-MM-DD`).
+- **Calendário**, em **Semana** (grade de horas) ou **Mês**. Cada dia tem sua nota diária
+  (`Diário/AAAA-MM-DD.md`) e mostra as tarefas do dia e as com prazo `📅 AAAA-MM-DD`.
+- **Eventos** são linhas da seção "Agenda" da nota diária: `- 14:00 - 15:30 Reunião` (formato
+  do Day Planner; `- [ ] 09:00 Ligar` também vale, 30 min sem fim). Na Semana: arraste no vazio
+  para criar, arraste um evento para mudar dia/hora, a borda de baixo para a duração, clique
+  para editar ou excluir. Tudo é reescrito na própria linha do arquivo.
 - **Editor markdown** próprio (sobre `Canvas`): títulos, negrito, *itálico*, código em fonte
   mono, citações, listas, tarefas clicáveis, `[[links]]`; seleção, copiar/colar, desfazer.
 - **Links**: backlinks, links de saída e sumário no painel da direita; renomear atualiza links.
@@ -47,14 +51,15 @@ src/
   workspace.ts             estado do cofre: notas, tarefas, notas diárias, links, busca, histórico
   ui.ts                    estado da tela: tela atual, mês/dia do calendário, painéis
   theme.ts                 paleta do Dia (claro e escuro)
-  dates.ts                 datas locais "AAAA-MM-DD" e nomes em português
-  vault/                   arquivos no disco, markdown (links, tarefas, tags), notas de exemplo
+  dates.ts                 datas locais "AAAA-MM-DD", semanas e nomes em português
+  vault/                   arquivos no disco, markdown (links, tarefas, tags), eventos, notas de exemplo
   editor/                  modelo de texto, layout do markdown e o widget do editor
   graph/physics.ts         simulação de forças do grafo
-  components/              Hoje, Calendário, tarefas, explorador, busca, painel direito, grafo
+  components/              Hoje, Calendário (mês e semana), tarefas, explorador, busca, painel direito, grafo
 test/
   core.test.ts             markdown, tarefas, datas, editor, layout, workspace, física
-  App.test.tsx             o app montado sem janela: Hoje, tarefas, editor, Ctrl+K, calendário, grafo
+  App.test.tsx             o app montado sem janela: Hoje, tarefas, editor, Ctrl+K, calendário,
+                           semana (criar, editar e arrastar eventos), grafo
 ```
 
 Requisitos: Linux com Wayland ou X11, [Bun](https://bun.sh) 1.4+.

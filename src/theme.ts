@@ -23,6 +23,11 @@ const light = {
   today: "#e8a317",
   todayText: "#2b1d00",
   weekend: "#f6efdd",
+  event: "#f6d88a",
+  eventBar: "#d99a06",
+  eventDone: "#efe6cf",
+  todayColumn: "#fff4d6",
+  now: "#d9480f",
   graphNode: "#b3a37c",
   graphEdge: "#5a461426",
 };
@@ -45,6 +50,11 @@ const dark: typeof light = {
   today: "#f2b632",
   todayText: "#1f1c16",
   weekend: "#232019",
+  event: "#5a4515",
+  eventBar: "#f2b632",
+  eventDone: "#2f2a20",
+  todayColumn: "#272216",
+  now: "#ff7a45",
   graphNode: "#8f8670",
   graphEdge: "#fff3d626",
 };

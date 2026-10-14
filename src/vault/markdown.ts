@@ -81,7 +81,8 @@ export function parseTasks(text: string): Task[] {
     const m = TASK.exec(line);
     if (!m) return;
     const due = DUE.exec(m[2]!);
-    const body = plainText(due ? m[2]!.replace(due[0], "") : m[2]!).trim();
+    // A leading time ("15:00 - 16:30 ...") makes it an event too; the list shows the title only.
+    const body = plainText((due ? m[2]!.replace(due[0], "") : m[2]!).replace(/^\d{1,2}:\d{2}(?:\s*[-–]\s*\d{1,2}:\d{2})?\s+/, "")).trim();
     if (body || due) out.push({ offset, done: m[1] !== " ", text: body, due: due?.[1] });
   });
   return out;
