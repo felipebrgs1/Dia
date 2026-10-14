@@ -3,6 +3,7 @@
 // offline. Feeds are downloaded at start and every REFRESH_MS.
 
 import { batch, createMemo, createSignal, onCleanup, untrack } from "@nodebuilderjs/core";
+import { readConfig, updateConfig } from "../config.js";
 import type { Vault } from "../vault/vault.js";
 import { type ExternalEvent, parseIcs, toDayEvents } from "./ics.js";
 
@@ -41,23 +42,12 @@ export function normalizeUrl(url: string) {
 
 export function createCalendars(vault: Vault, options: { fetcher?: Fetcher; autoRefresh?: boolean } = {}) {
   const fetcher = options.fetcher ?? defaultFetcher;
-  const load = (): CalendarSource[] => {
-    try {
-      return JSON.parse(vault.readMeta("config.json") ?? "{}").calendars ?? [];
-    } catch {
-      return [];
-    }
-  };
-  const [sources, setSources] = createSignal<CalendarSource[]>(load());
+  const [sources, setSources] = createSignal<CalendarSource[]>((readConfig(vault).calendars as CalendarSource[]) ?? []);
   const [feeds, setFeeds] = createSignal(new Map<string, string>()); // id → .ics text
   const [status, setStatus] = createSignal(new Map<string, CalendarStatus>());
 
   const save = (list: CalendarSource[]) => {
-    let config: Record<string, unknown> = {};
-    try {
-      config = JSON.parse(vault.readMeta("config.json") ?? "{}");
-    } catch {}
-    vault.writeMeta("config.json", `${JSON.stringify({ ...config, calendars: list }, null, 2)}\n`);
+    updateConfig(vault, { calendars: list });
     setSources(list);
   };
   const setOne = (id: string, s: Partial<CalendarStatus>) =>

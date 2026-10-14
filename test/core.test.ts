@@ -250,3 +250,21 @@ test("task status: [/] is in progress; set, toggle and insert tasks", async () =
   expect(insertTask("## Tarefas\n- [x] a\nobs\n## Notas", "- [ ] b")).toBe("## Tarefas\n- [x] a\n- [ ] b\nobs\n## Notas");
   expect(insertTask("# Sem seção", "- [ ] c")).toBe("# Sem seção\n\n## Tarefas\n- [ ] c\n");
 });
+
+test("tray: dot when an event is near or happening, tooltip and what is left", async () => {
+  const { trayState, trayIconSvg, SOON } = await import("../src/tray.js");
+  const open = () => {};
+  const day = [
+    { title: "Daily", start: 570, end: 585, open }, // 09:30–09:45
+    { title: "Dentista", start: 1050, end: 1110, open }, // 17:30–18:30
+  ];
+  expect(trayState(day, 480)).toMatchObject({ badge: null, tooltip: "Dia — próximo: Daily às 09:30" });
+  expect(trayState(day, 570 - SOON)).toMatchObject({ badge: "soon", tooltip: "Dia — Daily às 09:30 (em 15 min)" });
+  expect(trayState(day, 575)).toMatchObject({ badge: "now", tooltip: "Dia — agora: Daily (até 09:45)" });
+  expect(trayState(day, 1045).badge).toBe("soon"); // 5 min before the dentist
+  expect(trayState(day, 1200)).toMatchObject({ badge: null, tooltip: "Dia — nada mais na agenda hoje" });
+  expect(trayState(day, 1000).left.map((e) => e.title)).toEqual(["Dentista"]);
+  expect(trayIconSvg(null)).not.toContain("#e5372e");
+  expect(trayIconSvg("soon")).toContain("#e5372e");
+  expect(trayIconSvg("now")).toContain("#f08a24");
+});

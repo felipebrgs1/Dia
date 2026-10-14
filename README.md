@@ -45,6 +45,10 @@ Notas de exemplo só são criadas quando a pasta ainda não existe.
   mono, citações, listas, tarefas clicáveis, `[[links]]`; seleção, copiar/colar, desfazer.
 - **Links**: backlinks, links de saída e sumário no painel da direita; renomear atualiza links.
 - **Busca** (Ctrl+Shift+F), **tags**, **abrir rápido** (Ctrl+K), **grafo** com física (Ctrl+G).
+- **Bandeja do sistema**: o sol do Dia ganha um ponto vermelho quando um evento começa em até
+  15 min e laranja enquanto acontece; a dica diz qual e quando. O menu tem o resto da agenda de
+  hoje, nota de hoje, nova nota, "Fechar para a bandeja" (o X esconde a janela; salvo em
+  `.dia/config.json`) e Sair. Sem bandeja (GNOME sem a extensão AppIndicator), o X fecha o app.
 - Barra de título própria, tema claro (padrão) e escuro, salvamento automático.
 
 Atalhos: Ctrl+K abrir/criar nota, Ctrl+N nova nota, Ctrl+D nota de hoje, Ctrl+G grafo,
@@ -62,6 +66,8 @@ src/
   dates.ts                 datas locais "AAAA-MM-DD", semanas e nomes em português
   vault/                   arquivos no disco, markdown (links, tarefas, tags), eventos, notas de exemplo
   editor/                  modelo de texto, layout do markdown e o widget do editor
+  tray.ts                  ícone da bandeja (ponto de evento próximo), dica e menu
+  config.ts                configurações em .dia/config.json
   graph/physics.ts         simulação de forças do grafo
   calendars/               feeds iCal: leitura (ical.js), cache e atualização
   components/              Hoje, Calendário (mês e semana), Quadro, tarefas, explorador, busca, painel direito, grafo

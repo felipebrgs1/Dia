@@ -56,6 +56,7 @@ import { type LeftTab, type View, createUi } from "./ui.js";
 import { countWords, folderOf, noteName } from "./vault/markdown.js";
 import { type Vault, defaultVaultPath, memoryVault, openVault } from "./vault/vault.js";
 import { sampleIcs, welcomeNotes } from "./vault/welcome.js";
+import { createDiaTray } from "./tray.js";
 import { createWorkspace } from "./workspace.js";
 
 const SIDEBAR_WIDTH = 248;
@@ -115,6 +116,8 @@ export function App(
     ui.setView("editor");
     ws.openDaily(today());
   };
+
+  const tray = createDiaTray({ vault, ws, ui, cals, newNote, openToday });
 
   const shortcuts = (e: { key: string; ctrl: boolean; shift: boolean; alt: boolean; stop(): void }) => {
     const key = e.key; // with Ctrl or Alt, letters arrive lowercase
@@ -322,7 +325,7 @@ export function App(
     <Window
       title={() => (ui.view() === "editor" && ws.active() ? `${noteName(ws.active()!)} — Dia` : "Dia")}
       icon={appIcon}
-      appId="dev.nodebuilder.dia" width={1320} height={840} decorations={false} onClose={() => void ws.flush()} onKeyDown={shortcuts}>
+      appId="dev.nodebuilder.dia" width={1320} height={840} decorations={false} onClose={() => (ws.flush(), tray.onClose())} onKeyDown={shortcuts}>
       <TitleBar />
       <Line />
       <Row grow={1}>
