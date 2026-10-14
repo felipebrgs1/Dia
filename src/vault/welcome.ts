@@ -10,6 +10,23 @@ export function dailyTemplate(iso: string) {
   return `# ${longDate(iso)}\n\n## Agenda\n\n## Tarefas\n- [ ] \n\n## Notas\n`;
 }
 
+/** A small iCal feed around `day`, shown as an external calendar in screenshots. */
+export function sampleIcs(day = today()) {
+  const stamp = (iso: string, time: string) => `${iso.replace(/-/g, "")}T${time.replace(":", "")}00`;
+  const ev = (uid: string, title: string, start: string, end: string, extra = "") =>
+    `BEGIN:VEVENT\nUID:${uid}@exemplo\nSUMMARY:${title}\nDTSTART:${start}\nDTEND:${end}\n${extra}END:VEVENT`;
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Dia//Exemplo//PT",
+    ev("daily", "Daily do time", stamp(addDays(day, -14), "09:30"), stamp(addDays(day, -14), "09:45"), "RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR\n"),
+    ev("dentista", "Dentista", stamp(day, "17:30"), stamp(day, "18:30"), "LOCATION:Rua das Flores\\, 120\n"),
+    ev("one", "1:1 com a gestora", stamp(addDays(day, 1), "14:00"), stamp(addDays(day, 1), "14:45")),
+    `BEGIN:VEVENT\nUID:aniversario@exemplo\nSUMMARY:Aniversário da Ana\nDTSTART;VALUE=DATE:${addDays(day, 2).replace(/-/g, "")}\nDTEND;VALUE=DATE:${addDays(day, 3).replace(/-/g, "")}\nEND:VEVENT`,
+    "END:VCALENDAR",
+  ].join("\n");
+}
+
 export function welcomeNotes(day = today()): Record<string, string> {
   return {
     "Bem-vindo ao Dia.md": `O **Dia** junta suas notas, tarefas e calendário num lugar só. Tudo fica numa pasta comum de arquivos \`.md\` no seu disco, salvo sozinho.
@@ -18,6 +35,7 @@ export function welcomeNotes(day = today()): Record<string, string> {
 - A tela **Hoje** mostra a nota do dia, as tarefas abertas e o mês.
 - O **Quadro** junta as tarefas de todas as notas em A fazer, Fazendo (\`- [/]\`) e Feito. Arraste os cartões entre as colunas.
 - No **Calendário**, cada dia tem a sua nota diária. Na **Semana**, arraste num horário vazio para criar um evento; arraste um evento para mudar dia e hora, ou a borda de baixo para mudar a duração.
+- Para ver sua agenda do Google (ou Outlook, iCloud), use o botão de ajustes no Calendário e cole o link iCal secreto.
 - Crie uma nota com **Ctrl+N** e abra qualquer uma com **Ctrl+O**.
 - Ligue notas com [[Links e tarefas|colchetes duplos]] e veja tudo no grafo (**Ctrl+G**).
 

@@ -20,7 +20,9 @@ import {
   theme,
   windowControls,
 } from "@nodebuilderjs/core";
+import { type Fetcher, createCalendars } from "./calendars/store.js";
 import { BoardView } from "./components/BoardView.js";
+import { CalendarsDialog, ExternalEventDialog } from "./components/Calendars.js";
 import { CalendarView } from "./components/Calendar.js";
 import { FileExplorer } from "./components/FileExplorer.js";
 import { GraphView } from "./components/GraphView.js";
@@ -52,7 +54,7 @@ import { applyTheme, colors } from "./theme.js";
 import { type LeftTab, type View, createUi } from "./ui.js";
 import { countWords, folderOf, noteName } from "./vault/markdown.js";
 import { type Vault, defaultVaultPath, memoryVault, openVault } from "./vault/vault.js";
-import { welcomeNotes } from "./vault/welcome.js";
+import { sampleIcs, welcomeNotes } from "./vault/welcome.js";
 import { createWorkspace } from "./workspace.js";
 
 const SIDEBAR_WIDTH = 248;
@@ -61,13 +63,22 @@ function Line(props: { vertical?: boolean }) {
   return props.vertical ? <Box width={1} background={() => colors.border} /> : <Box height={1} background={() => colors.border} />;
 }
 
-export function App(props: { vault?: Vault; vaultPath?: string; note?: string; view?: View; theme?: "light" | "dark" } = {}) {
+export function App(
+  props: { vault?: Vault; vaultPath?: string; note?: string; view?: View; theme?: "light" | "dark"; fetcher?: Fetcher; calendarsOpen?: boolean } = {},
+) {
   // `bun run screenshot` imports the app with no arguments: show the example notes from memory
   // instead of creating a vault on disk.
   const vault =
     props.vault ??
     (process.env.NB_SCREENSHOT && !props.vaultPath ? memoryVault(welcomeNotes()) : openVault(props.vaultPath || defaultVaultPath()));
+  const demo = !!process.env.NB_SCREENSHOT && !props.vault && !props.vaultPath;
+  if (demo) {
+    // Screenshots show an example external calendar, from the cache (no network).
+    vault.writeMeta("config.json", JSON.stringify({ calendars: [{ id: "demo", name: "Trabalho (Google)", url: "https://exemplo", color: "#3b82f6", enabled: true }] }));
+    vault.writeMeta("cache/demo.ics", sampleIcs());
+  }
   const ws = createWorkspace(vault);
+  const cals = createCalendars(vault, { fetcher: props.fetcher, autoRefresh: !demo });
   const ui = createUi();
   applyTheme(props.theme ?? "light");
 
@@ -76,6 +87,7 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string; v
     ui.setView("editor");
   }
   if (props.view) ui.setView(props.view);
+  if (props.calendarsOpen) ui.setCalendarsOpen(true);
 
   createEffect(() => {
     const path = ws.active();
@@ -320,10 +332,10 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string; v
         </Show>
         <Switch>
           <Match when={() => ui.view() === "home"}>
-            <Home ws={ws} ui={ui} />
+            <Home ws={ws} ui={ui} cals={cals} />
           </Match>
           <Match when={() => ui.view() === "calendar"}>
-            <CalendarView ws={ws} ui={ui} />
+            <CalendarView ws={ws} ui={ui} cals={cals} />
           </Match>
           <Match when={() => ui.view() === "board"}>
             <BoardView ws={ws} ui={ui} />
@@ -336,6 +348,9 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string; v
           </Match>
         </Switch>
       </Row>
+
+      <CalendarsDialog cals={cals} ui={ui} />
+      <ExternalEventDialog cals={cals} ws={ws} ui={ui} />
 
       <Show when={ui.switcher}>
         <QuickSwitcher ws={ws} ui={ui} />

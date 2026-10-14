@@ -31,7 +31,10 @@ import type { Ui } from "../ui.js";
 import { DEFAULT_LENGTH, formatTime, placeEvents } from "../vault/events.js";
 import { plainText } from "../vault/markdown.js";
 import type { VaultEvent, Workspace } from "../workspace.js";
+import type { ExternalEvent } from "../calendars/ics.js";
+import type { Calendars } from "../calendars/store.js";
 import type { DayInfo } from "./Calendar.js";
+import { tint } from "./Calendars.js";
 
 export const HOUR = 48;
 const SNAP = 15;
@@ -57,8 +60,9 @@ interface Editing {
   date: string;
 }
 
-export function WeekView(props: { ws: Workspace; ui: Ui; days: () => Map<string, DayInfo> }) {
-  const { ws, ui } = props;
+export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: () => Map<string, DayInfo> }) {
+  const { ws, ui, cals } = props;
+  const colorOf = (e: ExternalEvent) => cals.source(e.calendarId)?.color ?? "#888888";
   const week = createMemo(() => weekOf(ui.selectedDay()));
   const byDay = createMemo(() => {
     const out = new Map<string, VaultEvent[]>();
@@ -186,6 +190,38 @@ export function WeekView(props: { ws: Workspace; ui: Ui; days: () => Map<string,
     );
   };
 
+  /** An event of a subscribed calendar: read-only, in its calendar's color; a click shows it. */
+  const ExternalBlock = (p: { ev: ExternalEvent; lane: number; lanes: number }) => {
+    const ev = p.ev;
+    const box = block(ev);
+    return (
+      <Column
+        position="absolute"
+        left={() => (colWidth() / p.lanes) * p.lane + 2}
+        width={() => colWidth() / p.lanes - 5}
+        top={box.top}
+        height={box.height}
+        padding={[3, 6, 3, 9]}
+        gap={1}
+        radius={6}
+        clip
+        cursor="pointer"
+        background={() => tint(colorOf(ev))}
+        hoverStyle={{ shadow: { color: "#5a46142e", blur: 8, y: 2 } }}
+        onPointerDown={(e) => e.stop()}
+        onClick={() => ui.setExternalDetail(ev)}
+      >
+        <Box position="absolute" left={-9} top={-3} width={3} height={box.height} background={() => colorOf(ev)} />
+        <Text fontSize={12} bold maxLines={box.height > 40 ? 2 : 1}>{ev.title}</Text>
+        <Show when={box.height > 30}>
+          <Text fontSize={11} maxLines={1} color={() => theme.text.secondary}>
+            {`${formatTime(ev.start)} – ${formatTime(ev.end)}${ev.location ? ` · ${ev.location}` : ""}`}
+          </Text>
+        </Show>
+      </Column>
+    );
+  };
+
   /** The block that follows the pointer while creating or moving. */
   const Ghost = (p: { date: () => string }) => (
     <Show when={() => {
@@ -222,7 +258,14 @@ export function WeekView(props: { ws: Workspace; ui: Ui; days: () => Map<string,
       const d = parseIso(p.date())!.getDay();
       return d === 0 || d === 6;
     };
-    const placed = createMemo(() => placeEvents(byDay().get(p.date()) ?? []).map((x) => ({ ev: x.item, lane: x.lane, lanes: x.lanes })));
+    // Note events and timed external events share the lanes, so overlaps sit side by side.
+    const placed = createMemo(() => {
+      const notes = (byDay().get(p.date()) ?? []).map((ev) => ({ kind: "note" as const, ev, start: ev.start, end: ev.end }));
+      const external = (props.days().get(p.date())?.external ?? [])
+        .filter((ev) => !ev.allDay)
+        .map((ev) => ({ kind: "external" as const, ev, start: ev.start, end: ev.end }));
+      return placeEvents([...notes, ...external]).map((x) => ({ item: x.item, lane: x.lane, lanes: x.lanes }));
+    });
     return (
       <Box
         ref={(el) => (columns[p.index] = el)}
@@ -250,7 +293,15 @@ export function WeekView(props: { ws: Workspace; ui: Ui; days: () => Map<string,
         <For each={() => HOURS}>
           {(h) => <Box position="absolute" left={0} right={0} top={h * HOUR} height={1} background={() => colors.border} />}
         </For>
-        <For each={placed}>{(x) => <EventBlock ev={x.ev} lane={x.lane} lanes={x.lanes} />}</For>
+        <For each={placed}>
+          {(x) =>
+            x.item.kind === "note" ? (
+              <EventBlock ev={x.item.ev} lane={x.lane} lanes={x.lanes} />
+            ) : (
+              <ExternalBlock ev={x.item.ev} lane={x.lane} lanes={x.lanes} />
+            )
+          }
+        </For>
         <Ghost date={p.date} />
         <Show when={() => p.date() === today()}>
           <Box position="absolute" left={0} right={0} top={() => (now() / 60) * HOUR - 1} height={2} background={() => colors.now} />
@@ -296,6 +347,19 @@ export function WeekView(props: { ws: Workspace; ui: Ui; days: () => Map<string,
                     </Text>
                   </Box>
                 </Row>
+                <For each={() => (props.days().get(date())?.external ?? []).filter((e) => e.allDay).slice(0, 2)}>
+                  {(e) => (
+                    <Row
+                      padding={[1, 6]}
+                      radius={4}
+                      cursor="pointer"
+                      background={() => tint(colorOf(e))}
+                      onClick={() => ui.setExternalDetail(e)}
+                    >
+                      <Text fontSize={11} maxLines={1}>{e.title}</Text>
+                    </Row>
+                  )}
+                </For>
                 <For each={() => (props.days().get(date())?.tasks ?? []).filter((t) => t.due === date()).slice(0, 2)}>
                   {(t) => (
                     <Row padding={[1, 6]} radius={4} background={() => colors.tagBg}>

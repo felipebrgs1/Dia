@@ -4,12 +4,13 @@
 import { Box, Button, Card, type Child, Column, For, Icon, Row, Scroll, Show, Text, createMemo, theme } from "@nodebuilderjs/core";
 import { greeting, longDate, noteLabel, shortDate, today } from "../dates.js";
 import { calendarDays, clock, fileText, listTodo, notebookPen } from "../icons.js";
-import { formatTime } from "../vault/events.js";
 import { colors } from "../theme.js";
 import type { Ui } from "../ui.js";
 import { folderOf, plainText } from "../vault/markdown.js";
 import type { VaultTask, Workspace } from "../workspace.js";
+import type { Calendars } from "../calendars/store.js";
 import { MonthGrid, MonthHeader, dayIndex } from "./Calendar.js";
+import { AgendaRow, agendaOf } from "./Calendars.js";
 import { TaskRow } from "./Tasks.js";
 
 function Section(props: { icon: string; title: string; extra?: () => string; children?: Child }) {
@@ -27,9 +28,9 @@ function Section(props: { icon: string; title: string; extra?: () => string; chi
   );
 }
 
-export function Home(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
-  const days = dayIndex(ws);
+export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
+  const { ws, ui, cals } = props;
+  const days = dayIndex(ws, cals);
   const day = today();
 
   // Open tasks: overdue and due first (by date), then the rest in note order.
@@ -112,7 +113,7 @@ export function Home(props: { ws: Workspace; ui: Ui }) {
             <Column width={330} gap={20}>
               <Card gap={10} padding={18} background={() => colors.card} borderColor={() => colors.border} shadow={{ color: "#5a46140d", blur: 12, y: 2 }}>
                 <MonthHeader ui={ui} size={17} />
-                <MonthGrid compact month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} />
+                <MonthGrid compact month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} colorOf={(id) => cals.source(id)?.color} />
                 <Box height={1} background={() => colors.border} />
                 <Row gap={8} align="center">
                   <Text grow={1} fontSize={13} color={() => theme.text.secondary}>
@@ -129,27 +130,29 @@ export function Home(props: { ws: Workspace; ui: Ui }) {
               <Section icon={calendarDays} title="Agenda de hoje">
                 <Column gap={6}>
                   <For
-                    each={() => days().get(day)?.events ?? []}
+                    each={() => agendaOf(days().get(day)?.events ?? [], days().get(day)?.external ?? [])}
                     fallback={<Text fontSize={13} color={() => theme.text.secondary}>Nada na agenda. No Calendário (Semana), arraste num horário para criar um evento.</Text>}
                   >
-                    {(e) => {
-                      const past = () => e.end <= new Date().getHours() * 60 + new Date().getMinutes();
-                      return (
-                        <Row
-                          gap={10}
-                          padding={[6, 8]}
-                          radius={6}
-                          cursor="pointer"
-                          background={() => colors.event}
-                          opacity={() => (past() ? 0.55 : 1)}
-                          onClick={() => (ui.setView("editor"), ws.open(e.path, { offset: e.offset }))}
-                        >
-                          <Box width={3} radius={2} background={() => colors.eventBar} />
-                          <Column grow={1} gap={1}>
-                            <Text bold maxLines={1}>{plainText(e.title)}</Text>
-                            <Text fontSize={12} color={() => theme.text.secondary}>{`${formatTime(e.start)} – ${formatTime(e.end)}`}</Text>
-                          </Column>
-                        </Row>
+                    {(item) => {
+                      const past = () => !item.allDay && item.end <= new Date().getHours() * 60 + new Date().getMinutes();
+                      return item.kind === "note" ? (
+                        <AgendaRow
+                          title={plainText(item.ev.title)}
+                          start={item.start}
+                          end={item.end}
+                          faded={past}
+                          onClick={() => (ui.setView("editor"), ws.open(item.ev.path, { offset: item.ev.offset }))}
+                        />
+                      ) : (
+                        <AgendaRow
+                          title={item.ev.title}
+                          start={item.start}
+                          end={item.end}
+                          allDay={item.allDay}
+                          color={cals.source(item.ev.calendarId)?.color}
+                          faded={past}
+                          onClick={() => ui.setExternalDetail(item.ev)}
+                        />
                       );
                     }}
                   </For>

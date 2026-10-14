@@ -18,13 +18,17 @@ import gitFork from "lucide-static/icons/git-fork.svg" with { type: "text" }; ex
 import hash from "lucide-static/icons/hash.svg" with { type: "text" }; export { hash };
 import house from "lucide-static/icons/house.svg" with { type: "text" }; export { house };
 import link from "lucide-static/icons/link.svg" with { type: "text" }; export { link };
+import link2 from "lucide-static/icons/link-2.svg" with { type: "text" }; export { link2 };
 import listTodo from "lucide-static/icons/list-todo.svg" with { type: "text" }; export { listTodo };
 import listTree from "lucide-static/icons/list-tree.svg" with { type: "text" }; export { listTree };
+import mapPin from "lucide-static/icons/map-pin.svg" with { type: "text" }; export { mapPin };
 import moon from "lucide-static/icons/moon.svg" with { type: "text" }; export { moon };
 import notebookPen from "lucide-static/icons/notebook-pen.svg" with { type: "text" }; export { notebookPen };
 import panelRight from "lucide-static/icons/panel-right.svg" with { type: "text" }; export { panelRight };
 import pencil from "lucide-static/icons/pencil.svg" with { type: "text" }; export { pencil };
+import refreshCw from "lucide-static/icons/refresh-cw.svg" with { type: "text" }; export { refreshCw };
 import search from "lucide-static/icons/search.svg" with { type: "text" }; export { search };
+import settings2 from "lucide-static/icons/settings-2.svg" with { type: "text" }; export { settings2 };
 import sparkles from "lucide-static/icons/sparkles.svg" with { type: "text" }; export { sparkles };
 import squareKanban from "lucide-static/icons/square-kanban.svg" with { type: "text" }; export { squareKanban };
 import sun from "lucide-static/icons/sun.svg" with { type: "text" }; export { sun };

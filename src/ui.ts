@@ -2,6 +2,7 @@
 
 import { createSignal } from "@nodebuilderjs/core";
 import { parseIso, today } from "./dates.js";
+import type { ExternalEvent } from "./calendars/ics.js";
 import type { EditorApi } from "./editor/Editor.js";
 
 export type LeftTab = "files" | "search" | "tags";
@@ -21,6 +22,8 @@ export function createUi() {
   const [selectedDay, setSelectedDay] = createSignal(today());
   const [calendarMode, setCalendarMode] = createSignal<CalendarMode>("week");
   const [switcher, setSwitcher] = createSignal(false);
+  const [calendarsOpen, setCalendarsOpen] = createSignal(false);
+  const [externalDetail, setExternalDetail] = createSignal<ExternalEvent | null>(null);
   const [renaming, setRenaming] = createSignal<string | null>(null);
   const [deleting, setDeleting] = createSignal<string | null>(null);
   const [newFolder, setNewFolder] = createSignal(false);
@@ -46,6 +49,8 @@ export function createUi() {
       setMonth({ year: d.getFullYear(), month: d.getMonth() });
     },
     switcher, setSwitcher,
+    calendarsOpen, setCalendarsOpen,
+    externalDetail, setExternalDetail,
     renaming, setRenaming,
     deleting, setDeleting,
     newFolder, setNewFolder,

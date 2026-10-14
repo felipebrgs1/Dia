@@ -10,6 +10,10 @@ import { formatTime } from "../vault/events.js";
 import { plainText } from "../vault/markdown.js";
 import type { VaultEvent, VaultTask, Workspace } from "../workspace.js";
 import { WeekView } from "./WeekView.js";
+import type { ExternalEvent } from "../calendars/ics.js";
+import type { Calendars } from "../calendars/store.js";
+import { AgendaRow, agendaOf, tint } from "./Calendars.js";
+import { settings2 } from "../icons.js";
 import { IconButton } from "./Item.js";
 import { TaskRow } from "./Tasks.js";
 
@@ -21,15 +25,17 @@ export interface DayInfo {
   tasks: VaultTask[];
   /** Timed events of the daily note, by start time. */
   events: VaultEvent[];
+  /** Events of the subscribed calendars (read-only). */
+  external: ExternalEvent[];
 }
 
 /** What every day of the vault has: daily notes and due tasks. */
-export function dayIndex(ws: Workspace) {
+export function dayIndex(ws: Workspace, cals?: Calendars) {
   return createMemo(() => {
     const days = new Map<string, DayInfo>();
     const day = (iso: string) => {
       let d = days.get(iso);
-      if (!d) days.set(iso, (d = { hasNote: false, preview: "", tasks: [], events: [] }));
+      if (!d) days.set(iso, (d = { hasNote: false, preview: "", tasks: [], events: [], external: [] }));
       return d;
     };
     for (const path of ws.files()) {
@@ -40,6 +46,8 @@ export function dayIndex(ws: Workspace) {
       const line = ws.read(path).split("\n").find((l) => l.trim() && !/^\s*(#|[-*+] |---)/.test(l));
       d.preview = line?.trim() ?? "";
     }
+    for (const e of cals?.events() ?? []) day(e.date).external.push(e);
+    for (const d of days.values()) d.external.sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start - b.start);
     const timed = new Set<string>();
     for (const e of ws.events()) {
       day(e.date).events.push(e);
@@ -61,6 +69,8 @@ export function MonthGrid(props: {
   onSelect: (iso: string) => void;
   onOpen: (iso: string) => void;
   compact?: boolean;
+  /** Color of an external calendar, for its events. */
+  colorOf?: (calendarId: string) => string | undefined;
 }) {
   const cells = createMemo(() => monthGrid(props.month().year, props.month().month));
   const compact = !!props.compact;
@@ -82,6 +92,22 @@ export function MonthGrid(props: {
             const inMonth = () => d.getMonth() === props.month().month;
             const info = () => props.days().get(iso);
             const open = () => info()?.tasks.filter((t) => !t.done).length ?? 0;
+            // External events, then note events, then tasks: what fits in a month cell.
+            const cellItems = () => {
+              const i = info();
+              if (!i) return [];
+              return [
+                ...i.external.map((e) => ({
+                  kind: "event" as const,
+                  title: e.title,
+                  time: e.allDay ? undefined : formatTime(e.start),
+                  color: props.colorOf?.(e.calendarId),
+                  done: false,
+                })),
+                ...i.events.map((e) => ({ kind: "event" as const, title: plainText(e.title), time: formatTime(e.start), color: undefined, done: !!e.done })),
+                ...i.tasks.map((t) => ({ kind: "task" as const, title: t.text || "(sem texto)", time: undefined, color: undefined, done: t.done })),
+              ];
+            };
             const isToday = () => iso === today();
             const weekend = d.getDay() === 0 || d.getDay() === 6;
             const number = (
@@ -115,7 +141,7 @@ export function MonthGrid(props: {
                   onClick={(e) => (e.clicks >= 2 ? props.onOpen(iso) : props.onSelect(iso))}
                 >
                   {number}
-                  <Box width={4} height={4} radius={2} background={() => (info()?.events.length || open() ? theme.accent.base : info()?.hasNote ? colors.faint : "#00000000")} />
+                  <Box width={4} height={4} radius={2} background={() => (info()?.events.length || info()?.external.length || open() ? theme.accent.base : info()?.hasNote ? colors.faint : "#00000000")} />
                 </Column>
               );
             return (
@@ -141,28 +167,29 @@ export function MonthGrid(props: {
                 <Show when={() => info()?.preview}>
                   <Text fontSize={12} maxLines={2} color={() => theme.text.secondary}>{() => info()!.preview}</Text>
                 </Show>
-                <For each={() => (info()?.events ?? []).slice(0, 3)}>
-                  {(e) => (
-                    <Row gap={4} align="center" padding={[1, 4]} radius={4} background={() => colors.event}>
-                      <Text fontSize={11} bold color={() => theme.text.primary}>{formatTime(e.start)}</Text>
-                      <Text fontSize={11} maxLines={1} grow={1} color={() => theme.text.primary}>{plainText(e.title)}</Text>
-                    </Row>
-                  )}
-                </For>
-                <For each={() => (info()?.tasks ?? []).slice(0, Math.max(0, 3 - (info()?.events.length ?? 0)))}>
-                  {(t) => (
-                    <Row gap={4} align="center">
-                      <Box width={6} height={6} radius={3} background={() => (t.done ? colors.faint : theme.accent.base)} />
-                      <Text fontSize={11} maxLines={1} grow={1} color={() => (t.done ? colors.faint : theme.text.primary)}>
-                        {t.text || "(sem texto)"}
+                <For each={() => cellItems().slice(0, 3)}>
+                  {(item) => (
+                    <Row
+                      gap={4}
+                      align="center"
+                      padding={[1, 4]}
+                      radius={4}
+                      background={() => (item.kind === "task" ? "#00000000" : item.color ? tint(item.color) : colors.event)}
+                    >
+                      <Show when={item.kind === "task"}>
+                        <Box width={6} height={6} radius={3} background={() => (item.done ? colors.faint : theme.accent.base)} />
+                      </Show>
+                      <Show when={item.time}>
+                        <Text fontSize={11} bold>{item.time!}</Text>
+                      </Show>
+                      <Text fontSize={11} maxLines={1} grow={1} color={() => (item.done ? colors.faint : theme.text.primary)}>
+                        {item.title}
                       </Text>
                     </Row>
                   )}
                 </For>
-                <Show when={() => (info()?.tasks.length ?? 0) + (info()?.events.length ?? 0) > 3}>
-                  <Text fontSize={11} color={() => theme.text.secondary}>
-                    {() => `+${info()!.tasks.length + info()!.events.length - 3} itens`}
-                  </Text>
+                <Show when={() => cellItems().length > 3}>
+                  <Text fontSize={11} color={() => theme.text.secondary}>{() => `+${cellItems().length - 3} itens`}</Text>
                 </Show>
               </Column>
             );
@@ -192,10 +219,12 @@ export function MonthHeader(props: { ui: Ui; size?: number }) {
   );
 }
 
-export function CalendarView(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
-  const days = dayIndex(ws);
+export function CalendarView(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
+  const { ws, ui, cals } = props;
+  const days = dayIndex(ws, cals);
+  const colorOf = (id: string) => cals.source(id)?.color;
   const selectedInfo = () => days().get(ui.selectedDay());
+  const agenda = () => agendaOf(selectedInfo()?.events ?? [], selectedInfo()?.external ?? []);
   const openAt = (path: string, offset: number) => {
     ui.setView("editor");
     ws.open(path, { offset });
@@ -245,13 +274,14 @@ export function CalendarView(props: { ws: Workspace; ui: Ui }) {
           <IconButton icon={chevronLeft} tip="Anterior" onClick={() => shift(-1)} />
           <Button label="Hoje" variant="flat" onClick={() => ui.goToday()} />
           <IconButton icon={chevronRight} tip="Próximo" onClick={() => shift(1)} />
+          <IconButton icon={settings2} tip="Calendários externos (Google, Outlook…)" onClick={() => ui.setCalendarsOpen(true)} />
         </Row>
         <Show
           when={week}
           fallback={
             <Scroll grow={1} padding={[0, 24, 24, 24]} gap={12}>
               <Column radius={10} clip borderWidth={1} borderColor={() => colors.border}>
-                <MonthGrid month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} />
+                <MonthGrid month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} colorOf={colorOf} />
               </Column>
               <Text fontSize={12} color={() => theme.text.secondary}>
                 Clique num dia para ver detalhes; dois cliques abrem a nota do dia. Tarefas com 📅 AAAA-MM-DD aparecem no dia do prazo.
@@ -260,7 +290,7 @@ export function CalendarView(props: { ws: Workspace; ui: Ui }) {
           }
         >
           <Box height={1} background={() => colors.border} />
-          <WeekView ws={ws} ui={ui} days={days} />
+          <WeekView ws={ws} ui={ui} cals={cals} days={days} />
         </Show>
       </Column>
       <Box width={1} background={() => colors.border} />
@@ -275,25 +305,25 @@ export function CalendarView(props: { ws: Workspace; ui: Ui }) {
           onClick={() => openDay(ui.selectedDay())}
         />
         <Scroll grow={1} gap={6}>
-          <Text bold fontSize={13}>{() => `Agenda (${selectedInfo()?.events.length ?? 0})`}</Text>
+          <Text bold fontSize={13}>{() => `Agenda (${agenda().length})`}</Text>
           <For
-            each={() => selectedInfo()?.events ?? []}
+            each={agenda}
             fallback={<Text fontSize={13} color={() => theme.text.secondary}>Sem eventos. Na Semana, arraste num horário vazio para criar.</Text>}
           >
-            {(e) => (
-              <Row
-                gap={10}
-                padding={[6, 8]}
-                radius={6}
-                cursor="pointer"
-                background={() => colors.event}
-                hoverStyle={{ opacity: 0.85 }}
-                onClick={() => openAt(e.path, e.offset)}
-              >
-                <Text fontSize={12} bold>{`${formatTime(e.start)}\n${formatTime(e.end)}`}</Text>
-                <Text grow={1} maxLines={2}>{plainText(e.title)}</Text>
-              </Row>
-            )}
+            {(item) =>
+              item.kind === "note" ? (
+                <AgendaRow title={plainText(item.ev.title)} start={item.start} end={item.end} onClick={() => openAt(item.ev.path, item.ev.offset)} />
+              ) : (
+                <AgendaRow
+                  title={item.ev.title}
+                  start={item.start}
+                  end={item.end}
+                  allDay={item.allDay}
+                  color={colorOf(item.ev.calendarId)}
+                  onClick={() => ui.setExternalDetail(item.ev)}
+                />
+              )
+            }
           </For>
           <Box height={6} />
           <Text bold fontSize={13}>{() => `Tarefas (${selectedInfo()?.tasks.length ?? 0})`}</Text>

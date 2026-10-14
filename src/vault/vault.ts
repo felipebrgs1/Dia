@@ -18,6 +18,9 @@ export interface Vault {
   rename(from: string, to: string): void;
   /** Moves to `.trash/` inside the vault, like Obsidian's default. */
   trash(path: string): void;
+  /** The app's own files (settings, caches) in `.dia/`, hidden from the notes. Null if missing. */
+  readMeta(name: string): string | null;
+  writeMeta(name: string, text: string): void;
 }
 
 export function defaultVaultPath() {
@@ -65,6 +68,17 @@ export function openVault(root: string): Vault {
       mkdirSync(dirname(abs(to)), { recursive: true });
       renameSync(abs(from), abs(to));
     },
+    readMeta(name) {
+      try {
+        return readFileSync(abs(`.dia/${name}`), "utf8");
+      } catch {
+        return null;
+      }
+    },
+    writeMeta(name, text) {
+      mkdirSync(dirname(abs(`.dia/${name}`)), { recursive: true });
+      writeFileSync(abs(`.dia/${name}`), text);
+    },
     trash(p) {
       let target = `.trash/${p.slice(p.lastIndexOf("/") + 1)}`;
       for (let i = 1; existsSync(abs(target)); i++) target = `.trash/${i} ${p.slice(p.lastIndexOf("/") + 1)}`;
@@ -78,6 +92,7 @@ export function openVault(root: string): Vault {
 export function memoryVault(initial: Record<string, string> = {}): Vault {
   const files = new Map(Object.entries(initial));
   const folders = new Set<string>();
+  const meta = new Map<string, string>();
   let clock = 0;
   const times = new Map([...files.keys()].map((p) => [p, ++clock]));
   const parents = (p: string) => {
@@ -102,5 +117,7 @@ export function memoryVault(initial: Record<string, string> = {}): Vault {
       files.delete(from);
     },
     trash: (p) => void files.delete(p),
+    readMeta: (name) => meta.get(name) ?? null,
+    writeMeta: (name, text) => void meta.set(name, text),
   };
 }
