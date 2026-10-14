@@ -1,9 +1,9 @@
 // The vault on disk: a folder of .md files. Paths are relative to the root and use "/".
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { WELCOME } from "./welcome.js";
+import { welcomeNotes } from "./welcome.js";
 
 export interface Vault {
   readonly root: string;
@@ -12,6 +12,8 @@ export interface Vault {
   read(path: string): string;
   write(path: string, text: string): void;
   exists(path: string): boolean;
+  /** Last modification (ms since epoch). */
+  mtime(path: string): number;
   mkdir(path: string): void;
   rename(from: string, to: string): void;
   /** Moves to `.trash/` inside the vault, like Obsidian's default. */
@@ -19,14 +21,14 @@ export interface Vault {
 }
 
 export function defaultVaultPath() {
-  return process.env.OBSIDIAN_VAULT || join(homedir(), "ObsidianClone");
+  return process.env.DIA_VAULT || join(homedir(), "Dia");
 }
 
 export function openVault(root: string): Vault {
   // Example notes only in a folder that did not exist: never write into an existing vault.
   if (!existsSync(root)) {
     mkdirSync(root, { recursive: true });
-    for (const [path, text] of Object.entries(WELCOME)) {
+    for (const [path, text] of Object.entries(welcomeNotes())) {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), text);
     }
@@ -57,6 +59,7 @@ export function openVault(root: string): Vault {
       writeFileSync(abs(p), text);
     },
     exists: (p) => existsSync(abs(p)),
+    mtime: (p) => statSync(abs(p)).mtimeMs,
     mkdir: (p) => void mkdirSync(abs(p), { recursive: true }),
     rename(from, to) {
       mkdirSync(dirname(abs(to)), { recursive: true });
@@ -75,6 +78,8 @@ export function openVault(root: string): Vault {
 export function memoryVault(initial: Record<string, string> = {}): Vault {
   const files = new Map(Object.entries(initial));
   const folders = new Set<string>();
+  let clock = 0;
+  const times = new Map([...files.keys()].map((p) => [p, ++clock]));
   const parents = (p: string) => {
     const out: string[] = [];
     for (let i = p.indexOf("/"); i >= 0; i = p.indexOf("/", i + 1)) out.push(p.slice(0, i));
@@ -88,8 +93,9 @@ export function memoryVault(initial: Record<string, string> = {}): Vault {
       return { files: [...files.keys()].sort((a, b) => a.localeCompare(b)), folders: [...all].sort((a, b) => a.localeCompare(b)) };
     },
     read: (p) => files.get(p) ?? "",
-    write: (p, t) => void files.set(p, t),
+    write: (p, t) => (files.set(p, t), void times.set(p, ++clock)),
     exists: (p) => files.has(p) || folders.has(p),
+    mtime: (p) => times.get(p) ?? 0,
     mkdir: (p) => void folders.add(p),
     rename(from, to) {
       files.set(to, files.get(from) ?? "");

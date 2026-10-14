@@ -1,12 +1,12 @@
 // The vault's folders and notes as a tree, with a context menu (right click).
 
 import { Card, Column, For, Icon, Overlay, Row, Scroll, Show, Text, createEffect, createMemo, createSignal, theme, untrack } from "@nodebuilderjs/core";
-import { chevronDown, chevronRight, filePlus, folderPlus, pencil, trash2 as trash } from "../icons.js";
+import { chevronDown, chevronRight, filePlus, pencil, trash2 as trash } from "../icons.js";
 import { colors } from "../theme.js";
 import type { Ui } from "../ui.js";
 import { noteName } from "../vault/markdown.js";
 import type { Workspace } from "../workspace.js";
-import { IconButton, Item } from "./Item.js";
+import { Item } from "./Item.js";
 
 interface TreeNode {
   name: string;
@@ -106,11 +106,7 @@ export function FileExplorer(props: { ws: Workspace; ui: Ui }) {
 
   return (
     <Column grow={1}>
-      <Row padding={[6, 8]} gap={2} justify="center">
-        <IconButton icon={filePlus} tip="Nova nota (Ctrl+N)" onClick={() => (ui.setView("editor"), ws.create())} />
-        <IconButton icon={folderPlus} tip="Nova pasta" onClick={() => ui.setNewFolder(true)} />
-      </Row>
-      <Scroll grow={1} padding={[0, 8, 8, 8]} gap={1}>
+      <Scroll grow={1} padding={[4, 8, 8, 8]} gap={1}>
         <TreeRows nodes={tree} depth={0} />
       </Scroll>
       <Show when={menu}>

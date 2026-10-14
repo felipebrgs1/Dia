@@ -1,6 +1,6 @@
 # Relatos de uso do nodebuilder
 
-Problemas encontrados ao construir um clone do Obsidian (editor markdown, explorador de arquivos,
+Problemas encontrados ao construir o **Dia** (começou como clone do Obsidian) (editor markdown, explorador de arquivos,
 backlinks, busca, quick switcher, grafo de forças) com o nodebuilder.
 
 - Começou em `@nodebuilderjs/core` 0.2.5; **revisado na 0.4.0** (os itens abaixo continuam
@@ -129,9 +129,36 @@ cofre em memória com as notas de exemplo.
 
 ---
 
+### 10. Filhos de `<Show>` são avaliados mesmo com a condição falsa
+
+No SolidJS, `<Show when={x}>{f(x)}</Show>` só chama `f` quando `x` é verdadeiro, porque o
+compilador transforma os filhos em getters. Aqui a expressão é avaliada ao montar o JSX:
+
+```tsx
+<Show when={() => t.due}>
+  <Text>{shortDate(t.due!)}</Text>   {/* roda com t.due === undefined e quebra */}
+</Show>
+```
+
+Quem vem do Solid (o `AGENTS.md` diz "como SolidJS") espera o contrário.
+
+**Contorno** (`src/components/Tasks.tsx`): `{() => shortDate(t.due!)}`.
+
+**Sugestão:** documentar com destaque na skill, ou avisar em desenvolvimento.
+
+### 11. Erros durante a montagem não apontam para o código do app
+
+Os dois erros acima (`null is not an object (evaluating 'd.getDate')` e `Cannot access 'goto'
+before initialization`) vieram no `bun test` com uma pilha só de frames do framework
+(`handleError`, `execute`, `createEffect`, `insertNow`, `holdMounts`), sem o arquivo do app.
+Tive de deduzir a origem.
+
+**Sugestão:** preservar a pilha original do erro (`cause`) ao relançar em `handleError`, ou
+incluir o nome do componente em que o efeito foi criado.
+
 ## Baixa
 
-### 10. Título do `Window` não é reativo
+### 12. Título do `Window` não é reativo
 
 `title` é uma `string`, não aceita accessor. Usei `windowControls.setTitle` num efeito
 (`src/App.tsx`). Desde a 0.3 dá para fazer a barra de título própria (`decorations={false}`),
@@ -139,7 +166,7 @@ o que resolve o resto.
 
 **Sugestão:** `title` como `MaybeAccessor<string>`.
 
-### 11. Menu de contexto na posição do mouse
+### 13. Menu de contexto na posição do mouse
 
 O clique direito está documentado (`onPointerDown` com `button === 2`), mas não há `Overlay`
 ancorado num ponto.
@@ -149,7 +176,7 @@ ancorado num ponto.
 
 **Sugestão:** `<Overlay at={{ x, y }}>`, com o mesmo reposicionamento do `anchor`.
 
-### 12. Ctrl+letra pode chegar maiúscula ou minúscula
+### 14. Ctrl+letra pode chegar maiúscula ou minúscula
 
 Com Ctrl, `text` vem vazio e a letra em `key` pode vir maiúscula (com Shift ou Caps Lock): o
 próprio `TextField` testa `"v"` e `"V"`, e o app precisa fazer o mesmo.

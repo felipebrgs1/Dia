@@ -153,3 +153,49 @@ test("graph physics: a dragged note pulls its neighbors, then everything settles
   while (running(sim) && ticks < 1000) (tick(sim), ticks++);
   expect(running(sim)).toBe(false);
 });
+
+test("tasks: parsed with due dates and toggled in place", async () => {
+  const { parseTasks, toggleTaskAt } = await import("../src/vault/markdown.js");
+  const text = "- [ ] comprar pão 📅 2026-10-15\n- [x] feito\n  - [ ] sub @2026-11-01\n```\n- [ ] no código\n```";
+  expect(parseTasks(text)).toEqual([
+    { offset: 0, done: false, text: "comprar pão", due: "2026-10-15" },
+    { offset: 32, done: true, text: "feito", due: undefined },
+    { offset: 44, done: false, text: "sub", due: "2026-11-01" },
+  ]);
+  expect(toggleTaskAt(text, 32).split("\n")[1]).toBe("- [ ] feito");
+  expect(toggleTaskAt(text, 0).startsWith("- [x] comprar")).toBe(true);
+});
+
+test("dates: month grid and names", async () => {
+  const { monthGrid, longDate, addDays } = await import("../src/dates.js");
+  const grid = monthGrid(2026, 9); // October 2026 starts on a Thursday
+  expect(grid.length).toBe(42);
+  expect(grid[0]).toBe("2026-09-27");
+  expect(grid[4]).toBe("2026-10-01");
+  expect(longDate("2026-10-14")).toBe("quarta-feira, 14 de outubro");
+  expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+});
+
+test("workspace: daily notes, tasks and recent notes", () => {
+  const vault = memoryVault({ "A.md": "- [ ] tarefa @2026-10-20" });
+  const ws = createWorkspace(vault, { saveDelay: 0 });
+  const path = ws.openDaily("2026-10-14");
+  expect(path).toBe("Diário/2026-10-14.md");
+  expect(ws.active()).toBe(path);
+  expect(vault.read(path)).toContain("# quarta-feira, 14 de outubro");
+  expect(ws.tasks().map((t) => [t.path, t.due])).toEqual([["A.md", "2026-10-20"]]);
+  ws.toggleTask("A.md", 0);
+  expect(ws.read("A.md")).toBe("- [x] tarefa @2026-10-20");
+  expect(ws.recent()[0]).toBe("A.md");
+});
+
+test("the editor document takes outside changes and keeps the caret", () => {
+  const doc = createDocument();
+  doc.reset("- [ ] um\nfim");
+  doc.moveTo(12); // inside "fim"
+  doc.sync("- [x] um\nfim");
+  expect(doc.text()).toBe("- [x] um\nfim");
+  expect(doc.head()).toBe(12);
+  doc.undo();
+  expect(doc.text()).toBe("- [ ] um\nfim");
+});

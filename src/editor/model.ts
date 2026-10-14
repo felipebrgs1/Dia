@@ -130,6 +130,23 @@ export function createDocument(initial = "") {
       lastKind = "other";
       restore({ text: value, anchor: caret, head: caret });
     },
+    /**
+     * The note changed outside the editor (a task checked in the calendar, a link renamed):
+     * takes the new text as one undoable edit, keeping the caret where it was.
+     */
+    sync(value: string) {
+      const s = t();
+      if (value === s) return;
+      // Only the changed middle is replaced, so a caret before or after it stays put.
+      let a = 0;
+      while (a < s.length && a < value.length && s[a] === value[a]) a++;
+      let b = 0;
+      while (b < s.length - a && b < value.length - a && s[s.length - 1 - b] === value[value.length - 1 - b]) b++;
+      const h = untrack(head);
+      const shift = value.length - s.length;
+      const caret = h <= a ? h : h >= s.length - b ? h + shift : a + (value.length - a - b);
+      replace(a, s.length - b, value.slice(a, value.length - b), caret);
+    },
     moveTo,
     select(from: number, to: number) {
       batch(() => (setAnchor(from), setHead(to)));

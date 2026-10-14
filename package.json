@@ -1,5 +1,5 @@
 {
-  "name": "obsidian",
+  "name": "dia",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "bun --watch src/main.tsx",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "package": "nodebuilder package src/main.tsx --title \"Obsidian\" --app-id dev.nodebuilder.obsidian",
+    "package": "nodebuilder package src/main.tsx --title \"Dia\" --app-id dev.nodebuilder.dia",
     "screenshot": "nodebuilder screenshot src/main.tsx screenshot.png",
     "doctor": "nodebuilder doctor",
     "icons:add": "nodebuilder icons add --out src/icons.ts"

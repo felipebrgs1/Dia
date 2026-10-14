@@ -1,60 +1,83 @@
 import {
   Box,
   Button,
+  type Child,
   Column,
   Dialog,
+  Icon,
   Match,
   Row,
   Show,
   Switch,
   Text,
   TextField,
+  Window,
+  WindowControls,
   colorScheme,
   createEffect,
   createMemo,
   createSignal,
   theme,
-  Window,
   windowControls,
 } from "@nodebuilderjs/core";
+import { CalendarView } from "./components/Calendar.js";
 import { FileExplorer } from "./components/FileExplorer.js";
 import { GraphView } from "./components/GraphView.js";
+import { Home } from "./components/Home.js";
 import { IconButton } from "./components/Item.js";
 import { QuickSwitcher } from "./components/QuickSwitcher.js";
 import { RightPanel } from "./components/RightPanel.js";
 import { SearchPanel, TagsPanel } from "./components/SearchPanel.js";
+import { today } from "./dates.js";
 import { Editor } from "./editor/Editor.js";
-import { arrowLeft, arrowRight, files as filesIcon, gitFork as graphIcon, hash as hashIcon, moon, panelRight, search as searchIcon, sun } from "./icons.js";
+import {
+  arrowLeft,
+  arrowRight,
+  calendarDays,
+  filePlus,
+  files as filesIcon,
+  folderPlus,
+  gitFork as graphIcon,
+  hash as hashIcon,
+  house,
+  moon,
+  notebookPen,
+  panelRight,
+  search as searchIcon,
+  sun,
+} from "./icons.js";
 import { applyTheme, colors } from "./theme.js";
-import { createUi } from "./ui.js";
+import { type LeftTab, type View, createUi } from "./ui.js";
 import { countWords, folderOf, noteName } from "./vault/markdown.js";
 import { type Vault, defaultVaultPath, memoryVault, openVault } from "./vault/vault.js";
-import { WELCOME } from "./vault/welcome.js";
+import { welcomeNotes } from "./vault/welcome.js";
 import { createWorkspace } from "./workspace.js";
 
-const SIDEBAR_WIDTH = 260;
+const SIDEBAR_WIDTH = 248;
 
-function VLine() {
-  return <Box width={1} background={() => colors.border} />;
+function Line(props: { vertical?: boolean }) {
+  return props.vertical ? <Box width={1} background={() => colors.border} /> : <Box height={1} background={() => colors.border} />;
 }
 
-export function App(props: { vault?: Vault; vaultPath?: string; note?: string } = {}) {
+export function App(props: { vault?: Vault; vaultPath?: string; note?: string; view?: View; theme?: "light" | "dark" } = {}) {
   // `bun run screenshot` imports the app with no arguments: show the example notes from memory
   // instead of creating a vault on disk.
   const vault =
     props.vault ??
-    (process.env.NB_SCREENSHOT && !props.vaultPath ? memoryVault(WELCOME) : openVault(props.vaultPath || defaultVaultPath()));
+    (process.env.NB_SCREENSHOT && !props.vaultPath ? memoryVault(welcomeNotes()) : openVault(props.vaultPath || defaultVaultPath()));
   const ws = createWorkspace(vault);
   const ui = createUi();
-  if (colorScheme() !== "dark") applyTheme("dark");
+  applyTheme(props.theme ?? "light");
 
-  // Start with the welcome note, or the first one.
-  const first = ws.files().find((p) => p === (props.note ?? "Bem-vindo.md")) ?? ws.files()[0];
-  if (first) ws.open(first);
+  if (props.note && ws.files().includes(props.note)) {
+    ws.open(props.note);
+    ui.setView("editor");
+  }
+  if (props.view) ui.setView(props.view);
 
   createEffect(() => {
     const path = ws.active();
-    windowControls.setTitle(path ? `${noteName(path)} - ${vault.root}` : "Obsidian");
+    windowControls.setTitle(ui.view() === "editor" && path ? `${noteName(path)} — Dia` : "Dia");
   });
   process.on("exit", () => ws.flush());
 
@@ -69,21 +92,27 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string } 
       Bun.spawn(["xdg-open", url], { stdout: "ignore", stderr: "ignore" });
     } catch {}
   };
-
-  const toggleLeft = (tab: "files" | "search" | "tags") => {
-    if (ui.leftOpen() && ui.leftTab() === tab) ui.setLeftOpen(false);
-    else {
-      ui.setLeftTab(tab);
-      ui.setLeftOpen(true);
-    }
+  const showTab = (tab: LeftTab) => {
+    ui.setLeftTab(tab);
+    ui.setLeftOpen(true);
+  };
+  const newNote = () => {
+    ui.setView("editor");
+    ws.create();
+  };
+  const openToday = () => {
+    ui.setView("editor");
+    ws.openDaily(today());
   };
 
   const shortcuts = (e: { key: string; ctrl: boolean; shift: boolean; alt: boolean; stop(): void }) => {
     const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (e.ctrl && (key === "o" || key === "p")) ui.setSwitcher(true);
-    else if (e.ctrl && key === "n") (ui.setView("editor"), ws.create());
-    else if (e.ctrl && e.shift && key === "f") (ui.setLeftTab("search"), ui.setLeftOpen(true));
+    if (e.ctrl && (key === "o" || key === "p" || key === "k")) ui.setSwitcher(true);
+    else if (e.ctrl && key === "n") newNote();
+    else if (e.ctrl && key === "d") openToday();
+    else if (e.ctrl && e.shift && key === "f") showTab("search");
     else if (e.ctrl && key === "g") ui.setView((v) => (v === "graph" ? "editor" : "graph"));
+    else if (e.ctrl && key === "\\") ui.setLeftOpen((o) => !o);
     else if (e.ctrl && key === "s") ws.flush();
     else if (e.alt && key === "Left") ws.goBack();
     else if (e.alt && key === "Right") ws.goForward();
@@ -111,110 +140,195 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string } 
     ui.setNewFolder(false);
   };
 
-  return (
-    <Window title="Obsidian" appId="dev.nodebuilder.obsidian" width={1280} height={800} onClose={() => void ws.flush()} onKeyDown={shortcuts}>
-      <Row grow={1}>
-        {/* Ribbon */}
-        <Column width={44} padding={[8, 0]} gap={4} align="center" background={() => colors.ribbon}>
-          <IconButton icon={filesIcon} tip="Arquivos" active={() => ui.leftOpen() && ui.leftTab() === "files"} onClick={() => toggleLeft("files")} />
-          <IconButton icon={searchIcon} tip="Buscar (Ctrl+Shift+F)" active={() => ui.leftOpen() && ui.leftTab() === "search"} onClick={() => toggleLeft("search")} />
-          <IconButton icon={hashIcon} tip="Tags" active={() => ui.leftOpen() && ui.leftTab() === "tags"} onClick={() => toggleLeft("tags")} />
-          <IconButton icon={graphIcon} tip="Grafo (Ctrl+G)" active={() => ui.view() === "graph"} onClick={() => ui.setView((v) => (v === "graph" ? "editor" : "graph"))} />
-          <Box grow={1} />
-          <IconButton
-            icon={() => (colorScheme() === "dark" ? sun : moon)}
-            tip="Tema claro/escuro"
-            onClick={() => applyTheme(colorScheme() === "dark" ? "light" : "dark")}
-          />
-        </Column>
-        <VLine />
+  const NavItem = (p: { icon: string; label: string; view: View; hint?: string }) => (
+    <Row
+      gap={10}
+      align="center"
+      padding={[7, 10]}
+      radius={6}
+      cursor="pointer"
+      background={() => (ui.view() === p.view ? colors.active : "#00000000")}
+      hoverStyle={{ background: () => (ui.view() === p.view ? colors.active : colors.hover) }}
+      color={() => (ui.view() === p.view ? theme.text.primary : theme.text.secondary)}
+      onClick={() => ui.setView(p.view)}
+    >
+      <Icon svg={p.icon} size={17} strokeWidth={1.75} />
+      <Text grow={1} bold={() => ui.view() === p.view}>{p.label}</Text>
+      <Show when={() => p.hint}>
+        <Text fontSize={11} color={() => colors.faint}>{p.hint!}</Text>
+      </Show>
+    </Row>
+  );
 
-        {/* Left sidebar */}
-        <Show when={ui.leftOpen}>
-          <Column width={SIDEBAR_WIDTH} background={() => colors.sidebar}>
-            <Switch>
-              <Match when={() => ui.leftTab() === "files"}>
-                <FileExplorer ws={ws} ui={ui} />
-              </Match>
-              <Match when={() => ui.leftTab() === "search"}>
-                <SearchPanel ws={ws} ui={ui} />
-              </Match>
-              <Match when={() => ui.leftTab() === "tags"}>
-                <TagsPanel ws={ws} ui={ui} />
-              </Match>
-            </Switch>
-          </Column>
-          <VLine />
+  const TabButton = (p: { icon: string; tab: LeftTab; tip: string }) => (
+    <IconButton icon={p.icon} tip={p.tip} active={() => ui.leftTab() === p.tab} onClick={() => ui.setLeftTab(p.tab)} size={16} />
+  );
+
+  const TitleBar = () => (
+    <Row dragRegion height={44} align="center" gap={6} padding={[0, 8, 0, 12]} background={() => colors.titlebar}>
+      <Box width={24} height={24} radius={7} align="center" justify="center" background={() => colors.today}>
+        <Icon svg={sun} size={15} strokeWidth={2.25} color={() => colors.todayText} />
+      </Box>
+      <Text bold fontSize={15} padding={[0, 6, 0, 2]}>Dia</Text>
+      <IconButton icon={arrowLeft} tip="Voltar (Alt+←)" onClick={ws.goBack} size={16} />
+      <IconButton icon={arrowRight} tip="Avançar (Alt+→)" onClick={ws.goForward} size={16} />
+      <Box grow={1} />
+      <Row
+        width={440}
+        height={30}
+        gap={8}
+        align="center"
+        padding={[0, 10]}
+        radius={8}
+        cursor="pointer"
+        background={() => colors.page}
+        borderWidth={1}
+        borderColor={() => colors.border}
+        hoverStyle={{ borderColor: () => theme.accent.base }}
+        color={() => theme.text.secondary}
+        onClick={() => ui.setSwitcher(true)}
+      >
+        <Icon svg={searchIcon} size={15} />
+        <Text grow={1} fontSize={13}>Buscar ou abrir uma nota</Text>
+        <Text fontSize={11} color={() => colors.faint}>Ctrl K</Text>
+      </Row>
+      <Box grow={1} />
+      <Show when={() => ui.view() === "editor"}>
+        <IconButton icon={panelRight} tip="Painel de links" active={ui.rightOpen} onClick={() => ui.setRightOpen((o) => !o)} size={16} />
+      </Show>
+      <IconButton
+        icon={() => (colorScheme() === "dark" ? sun : moon)}
+        tip="Tema claro/escuro"
+        onClick={() => applyTheme(colorScheme() === "dark" ? "light" : "dark")}
+        size={16}
+      />
+      <WindowControls gap={6} padding={[0, 0, 0, 6]} />
+    </Row>
+  );
+
+  const Sidebar = () => (
+    <Column width={SIDEBAR_WIDTH} background={() => colors.sidebar}>
+      <Column padding={[10, 8, 6, 8]} gap={1}>
+        <NavItem icon={house} label="Hoje" view="home" />
+        <NavItem icon={calendarDays} label="Calendário" view="calendar" />
+        <NavItem icon={graphIcon} label="Grafo" view="graph" hint="Ctrl G" />
+        <Row
+          gap={10}
+          align="center"
+          padding={[7, 10]}
+          radius={6}
+          cursor="pointer"
+          hoverStyle={{ background: () => colors.hover }}
+          color={() => theme.text.secondary}
+          onClick={openToday}
+        >
+          <Icon svg={notebookPen} size={17} strokeWidth={1.75} />
+          <Text grow={1}>Nota de hoje</Text>
+          <Text fontSize={11} color={() => colors.faint}>Ctrl D</Text>
+        </Row>
+      </Column>
+      <Line />
+      <Row padding={[6, 8, 0, 14]} align="center" gap={2}>
+        <Text grow={1} fontSize={11} bold letterSpacing={1} color={() => theme.text.secondary}>
+          {() => ({ files: "NOTAS", search: "BUSCAR", tags: "TAGS" })[ui.leftTab()]}
+        </Text>
+        <Show when={() => ui.leftTab() === "files"}>
+          <IconButton icon={filePlus} tip="Nova nota (Ctrl+N)" onClick={newNote} size={15} />
+          <IconButton icon={folderPlus} tip="Nova pasta" onClick={() => ui.setNewFolder(true)} size={15} />
+          <Box width={1} height={16} margin={[0, 4]} background={() => colors.border} />
         </Show>
+        <TabButton icon={filesIcon} tab="files" tip="Notas" />
+        <TabButton icon={searchIcon} tab="search" tip="Buscar (Ctrl+Shift+F)" />
+        <TabButton icon={hashIcon} tab="tags" tip="Tags" />
+      </Row>
+      <Switch>
+        <Match when={() => ui.leftTab() === "files"}>
+          <FileExplorer ws={ws} ui={ui} />
+        </Match>
+        <Match when={() => ui.leftTab() === "search"}>
+          <SearchPanel ws={ws} ui={ui} />
+        </Match>
+        <Match when={() => ui.leftTab() === "tags"}>
+          <TagsPanel ws={ws} ui={ui} />
+        </Match>
+      </Switch>
+    </Column>
+  );
 
-        {/* Main area */}
-        <Column grow={1} minWidth={0} background={() => colors.editor}>
-          <Row padding={[4, 8]} gap={4} align="center">
-            <IconButton icon={arrowLeft} tip="Voltar (Alt+←)" onClick={ws.goBack} />
-            <IconButton icon={arrowRight} tip="Avançar (Alt+→)" onClick={ws.goForward} />
-            <Row grow={1} justify="center" gap={4}>
-              <Text maxLines={1} color={() => theme.text.secondary}>
-                {() => {
-                  const path = ws.active();
-                  if (!path) return "";
-                  const folder = folderOf(path);
-                  return folder ? `${folder.replace(/\//g, " / ")} / ` : "";
-                }}
-              </Text>
-              <Text maxLines={1}>{() => (ws.active() ? noteName(ws.active()!) : "")}</Text>
-            </Row>
-            <IconButton icon={panelRight} tip="Painel direito" active={ui.rightOpen} onClick={() => ui.setRightOpen((o) => !o)} />
-          </Row>
-          <Switch>
-            <Match when={() => ui.view() === "graph"}>
-              <GraphView ws={ws} ui={ui} />
-            </Match>
-            <Match when={() => ui.view() === "editor" && ws.active()}>
-              <Editor
-                path={ws.active}
-                load={ws.read}
-                onChange={ws.write}
-                onOpenLink={(target) => ws.openLink(target)}
-                onOpenUrl={openUrl}
-                jump={ws.jump}
-                api={ui.setEditor}
-                header={
-                  <Text
-                    fontSize={30}
-                    bold
-                    padding={[8, 0, 16, 0]}
-                    cursor="text"
-                    onClick={() => ws.active() && ui.setRenaming(ws.active())}
-                  >
-                    {() => (ws.active() ? noteName(ws.active()!) : "")}
-                  </Text>
-                }
-              />
-            </Match>
-            <Match when={() => true}>
-              <Column grow={1} align="center" justify="center" gap={12}>
-                <Text fontSize={20} bold>Nenhuma nota aberta</Text>
-                <Row gap={8}>
-                  <Button label="Criar nota (Ctrl+N)" variant="primary" onClick={() => ws.create()} />
-                  <Button label="Abrir nota (Ctrl+O)" onClick={() => ui.setSwitcher(true)} />
-                </Row>
+  const EditorPane = (): Child => (
+    <Row grow={1}>
+      <Column grow={1} width={0} background={() => colors.page}>
+        <Show
+          when={ws.active}
+          fallback={
+            <Column grow={1} align="center" justify="center" gap={12}>
+              <Text fontSize={20} bold>Nenhuma nota aberta</Text>
+              <Row gap={8}>
+                <Button label="Nova nota (Ctrl+N)" variant="primary" onClick={newNote} />
+                <Button label="Abrir nota (Ctrl+K)" onClick={() => ui.setSwitcher(true)} />
+              </Row>
+            </Column>
+          }
+        >
+          <Editor
+            path={ws.active}
+            load={ws.read}
+            text={text}
+            onChange={ws.write}
+            onOpenLink={(target) => ws.openLink(target)}
+            onOpenUrl={openUrl}
+            jump={ws.jump}
+            api={ui.setEditor}
+            header={
+              <Column gap={4} padding={[4, 0, 16, 0]}>
+                <Text fontSize={12} color={() => theme.text.secondary}>
+                  {() => (ws.active() && folderOf(ws.active()!) ? folderOf(ws.active()!).replace(/\//g, " / ") : " ")}
+                </Text>
+                <Text fontSize={32} fontWeight={800} cursor="text" onClick={() => ws.active() && ui.setRenaming(ws.active())}>
+                  {() => (ws.active() ? noteName(ws.active()!) : "")}
+                </Text>
               </Column>
-            </Match>
-          </Switch>
-          <Row padding={[4, 12]} gap={16} justify="end" color={() => theme.text.secondary}>
+            }
+          />
+          <Row padding={[4, 14]} gap={16} justify="end" color={() => theme.text.secondary}>
             <Text fontSize={12}>{() => `${ws.backlinks(ws.active() ?? "").length} backlinks`}</Text>
             <Text fontSize={12}>{() => `${countWords(text())} palavras`}</Text>
             <Text fontSize={12}>{() => `${text().length} caracteres`}</Text>
           </Row>
-        </Column>
-
-        {/* Right sidebar */}
-        <Show when={ui.rightOpen}>
-          <VLine />
-          <Column width={SIDEBAR_WIDTH} background={() => colors.sidebar}>
-            <RightPanel ws={ws} ui={ui} />
-          </Column>
         </Show>
+      </Column>
+      <Show when={ui.rightOpen}>
+        <Line vertical />
+        <Column width={SIDEBAR_WIDTH + 12} background={() => colors.sidebar}>
+          <RightPanel ws={ws} ui={ui} />
+        </Column>
+      </Show>
+    </Row>
+  );
+
+  return (
+    <Window title="Dia" appId="dev.nodebuilder.dia" width={1320} height={840} decorations={false} onClose={() => void ws.flush()} onKeyDown={shortcuts}>
+      <TitleBar />
+      <Line />
+      <Row grow={1}>
+        <Show when={ui.leftOpen}>
+          <Sidebar />
+          <Line vertical />
+        </Show>
+        <Switch>
+          <Match when={() => ui.view() === "home"}>
+            <Home ws={ws} ui={ui} />
+          </Match>
+          <Match when={() => ui.view() === "calendar"}>
+            <CalendarView ws={ws} ui={ui} />
+          </Match>
+          <Match when={() => ui.view() === "graph"}>
+            <GraphView ws={ws} ui={ui} />
+          </Match>
+          <Match when={() => ui.view() === "editor"}>
+            <EditorPane />
+          </Match>
+        </Switch>
       </Row>
 
       <Show when={ui.switcher}>
@@ -276,5 +390,3 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string } 
     </Window>
   );
 }
-
-

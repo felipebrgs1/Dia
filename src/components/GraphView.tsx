@@ -111,7 +111,7 @@ export function GraphView(props: { ws: Workspace; ui: Ui }) {
   };
 
   return (
-    <Column grow={1} background={() => colors.editor}>
+    <Column grow={1} background={() => colors.page}>
       <Row padding={[10, 16]} gap={12} align="center">
         <Text bold>Visão de grafo</Text>
         <Text fontSize={12} color={() => theme.text.secondary}>

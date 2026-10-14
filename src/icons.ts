@@ -2,8 +2,12 @@
 
 import arrowLeft from "lucide-static/icons/arrow-left.svg" with { type: "text" }; export { arrowLeft };
 import arrowRight from "lucide-static/icons/arrow-right.svg" with { type: "text" }; export { arrowRight };
+import calendar from "lucide-static/icons/calendar.svg" with { type: "text" }; export { calendar };
+import calendarDays from "lucide-static/icons/calendar-days.svg" with { type: "text" }; export { calendarDays };
 import chevronDown from "lucide-static/icons/chevron-down.svg" with { type: "text" }; export { chevronDown };
+import chevronLeft from "lucide-static/icons/chevron-left.svg" with { type: "text" }; export { chevronLeft };
 import chevronRight from "lucide-static/icons/chevron-right.svg" with { type: "text" }; export { chevronRight };
+import clock from "lucide-static/icons/clock.svg" with { type: "text" }; export { clock };
 import filePlus from "lucide-static/icons/file-plus.svg" with { type: "text" }; export { filePlus };
 import fileText from "lucide-static/icons/file-text.svg" with { type: "text" }; export { fileText };
 import files from "lucide-static/icons/files.svg" with { type: "text" }; export { files };
@@ -12,11 +16,15 @@ import folderOpen from "lucide-static/icons/folder-open.svg" with { type: "text"
 import folderPlus from "lucide-static/icons/folder-plus.svg" with { type: "text" }; export { folderPlus };
 import gitFork from "lucide-static/icons/git-fork.svg" with { type: "text" }; export { gitFork };
 import hash from "lucide-static/icons/hash.svg" with { type: "text" }; export { hash };
+import house from "lucide-static/icons/house.svg" with { type: "text" }; export { house };
 import link from "lucide-static/icons/link.svg" with { type: "text" }; export { link };
+import listTodo from "lucide-static/icons/list-todo.svg" with { type: "text" }; export { listTodo };
 import listTree from "lucide-static/icons/list-tree.svg" with { type: "text" }; export { listTree };
 import moon from "lucide-static/icons/moon.svg" with { type: "text" }; export { moon };
+import notebookPen from "lucide-static/icons/notebook-pen.svg" with { type: "text" }; export { notebookPen };
 import panelRight from "lucide-static/icons/panel-right.svg" with { type: "text" }; export { panelRight };
 import pencil from "lucide-static/icons/pencil.svg" with { type: "text" }; export { pencil };
 import search from "lucide-static/icons/search.svg" with { type: "text" }; export { search };
+import sparkles from "lucide-static/icons/sparkles.svg" with { type: "text" }; export { sparkles };
 import sun from "lucide-static/icons/sun.svg" with { type: "text" }; export { sun };
 import trash2 from "lucide-static/icons/trash-2.svg" with { type: "text" }; export { trash2 };

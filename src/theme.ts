@@ -1,47 +1,56 @@
-// Obsidian-like colors on top of nodebuilder's theme. Read them inside functions
-// (`background={() => colors.sidebar}`): each getter follows setTheme().
+// Dia's colors: warm paper and amber, light first, with a warm dark mode. Read them inside
+// functions (`background={() => colors.sidebar}`): each getter follows setTheme().
 
 import { colorScheme, darkTheme, lightTheme, setTheme, theme } from "@nodebuilderjs/core";
 import type { Role } from "./editor/layout.js";
 
-const dark = {
-  editor: "#1e1e1e",
-  sidebar: "#262626",
-  ribbon: "#202020",
-  border: "#ffffff14",
-  hover: "#ffffff0f",
-  active: "#ffffff1c",
-  faint: "#6c6c6c",
-  codeBg: "#2a2a2a",
-  highlight: "#7f6df24d",
-  link: "#a88bfa",
-  tag: "#a88bfa",
-  tagBg: "#a88bfa26",
-  graphNode: "#9a9a9a",
-  graphEdge: "#ffffff26",
+const light = {
+  /** The page: notes, home, calendar. */
+  page: "#fffdf6",
+  sidebar: "#f8f2e2",
+  titlebar: "#f3ead3",
+  card: "#fffaf0",
+  border: "#5a46141f",
+  hover: "#8a6a1414",
+  active: "#f2c14e40",
+  faint: "#b5aa8c",
+  codeBg: "#f5eedc",
+  highlight: "#ffd95c99",
+  link: "#a3620a",
+  tag: "#a3620a",
+  tagBg: "#f2c14e33",
+  code: "#a24d1f",
+  today: "#e8a317",
+  todayText: "#2b1d00",
+  weekend: "#f6efdd",
+  graphNode: "#b3a37c",
+  graphEdge: "#5a461426",
 };
 
-const light: typeof dark = {
-  editor: "#ffffff",
-  sidebar: "#f6f6f6",
-  ribbon: "#eeeeee",
-  border: "#00000014",
-  hover: "#0000000a",
-  active: "#00000014",
-  faint: "#ababab",
-  codeBg: "#f3f3f3",
-  highlight: "#ffe56b80",
-  link: "#705dcf",
-  tag: "#705dcf",
-  tagBg: "#705dcf1f",
-  graphNode: "#8a8a8a",
-  graphEdge: "#00000026",
+const dark: typeof light = {
+  page: "#1f1c16",
+  sidebar: "#25211a",
+  titlebar: "#1a1812",
+  card: "#28241c",
+  border: "#fff3d61a",
+  hover: "#fff3d60f",
+  active: "#f2b63233",
+  faint: "#7d735d",
+  codeBg: "#2c2820",
+  highlight: "#f2b63259",
+  link: "#f2c14e",
+  tag: "#f2c14e",
+  tagBg: "#f2b63226",
+  code: "#e8a66f",
+  today: "#f2b632",
+  todayText: "#1f1c16",
+  weekend: "#232019",
+  graphNode: "#8f8670",
+  graphEdge: "#fff3d626",
 };
 
-export const colors = Object.fromEntries(
-  Object.keys(dark).map((k) => [k, undefined]),
-) as unknown as typeof dark;
-for (const key of Object.keys(dark) as (keyof typeof dark)[]) {
+export const colors = {} as typeof light;
+for (const key of Object.keys(light) as (keyof typeof light)[]) {
   Object.defineProperty(colors, key, { get: () => (colorScheme() === "dark" ? dark : light)[key] });
 }
 
@@ -50,6 +59,7 @@ export function roleColor(role: Role): string {
   switch (role) {
     case "heading":
     case "text":
+    case "highlight":
       return theme.text.primary;
     case "muted":
     case "strike":
@@ -63,34 +73,39 @@ export function roleColor(role: Role): string {
     case "tag":
       return colors.tag;
     case "code":
-      return colorScheme() === "dark" ? "#e3a86f" : "#b5562c";
-    case "highlight":
-      return theme.text.primary;
+      return colors.code;
   }
 }
 
-const purple = { base: "#7f6df2", hover: "#8f7ff5", pressed: "#6b58e0", text: "#ffffff" };
-
 export function applyTheme(scheme: "light" | "dark") {
-  if (scheme === "dark") {
-    setTheme({
-      ...darkTheme,
-      accent: purple,
-      window: { ...darkTheme.window, background: dark.editor },
-      text: { primary: "#dadada", secondary: "#9e9e9e", inverted: "#1e1e1e" },
-      field: { ...darkTheme.field, background: "#2a2a2a", focus: purple.base },
-      card: { background: "#262626", border: "#ffffff14" },
-      selection: "#7f6df259",
-      focusRing: "#7f6df280",
-    });
-  } else {
+  if (scheme === "light") {
+    const amber = { base: "#e0a10f", hover: "#eaae22", pressed: "#c98c06", text: "#2b1d00" };
     setTheme({
       ...lightTheme,
-      accent: { base: "#705dcf", hover: "#7f6df2", pressed: "#5c49bd", text: "#ffffff" },
-      window: { ...lightTheme.window, background: light.editor },
-      field: { ...lightTheme.field, focus: "#705dcf" },
-      selection: "#705dcf40",
-      focusRing: "#705dcf80",
+      accent: amber,
+      window: { ...lightTheme.window, background: light.page, border: "#5a461433" },
+      text: { primary: "#2b2618", secondary: "#7a7058", inverted: "#fffdf6" },
+      control: { base: "#5a461414", hover: "#5a461421", pressed: "#5a461430", text: "#2b2618" },
+      field: { background: "#fffefa", border: "#5a461433", focus: amber.base, placeholder: "#aea486" },
+      card: { background: light.card, border: light.border },
+      divider: light.border,
+      selection: "#f2c14e59",
+      focusRing: "#e0a10f80",
+      tooltip: { background: "#2b2618eb", text: "#fffdf6" },
+    });
+  } else {
+    const amber = { base: "#f2b632", hover: "#f5c04d", pressed: "#d99d1c", text: "#1f1c16" };
+    setTheme({
+      ...darkTheme,
+      accent: amber,
+      window: { ...darkTheme.window, background: dark.page, border: "#fff3d61f" },
+      text: { primary: "#ece4cf", secondary: "#a89f86", inverted: "#1f1c16" },
+      control: { base: "#fff3d614", hover: "#fff3d61f", pressed: "#fff3d62e", text: "#ece4cf" },
+      field: { background: "#2a261e", border: "#fff3d624", focus: amber.base, placeholder: "#7d735d" },
+      card: { background: dark.card, border: dark.border },
+      divider: dark.border,
+      selection: "#f2b63240",
+      focusRing: "#f2b63280",
     });
   }
 }

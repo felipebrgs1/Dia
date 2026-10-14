@@ -41,6 +41,8 @@ const TASK = /^(\s*(?:>+\s?)?\s*(?:[-*+]|\d+[.)]) )\[[ xX]\]/;
 export function Editor(props: {
   path: () => string | null;
   load: (path: string) => string;
+  /** The note's current text (tracked): changes made elsewhere show up in the editor. */
+  text?: () => string;
   onChange: (path: string, text: string) => void;
   onOpenLink: (target: string) => void;
   onOpenUrl?: (url: string) => void;
@@ -102,12 +104,12 @@ export function Editor(props: {
     });
   });
   createEffect(() => {
-    const jump = props.jump?.();
-    if (jump && jump.path === untrack(() => props.path())) untrack(() => goto(jump.offset));
-  });
-  createEffect(() => {
     const text = doc.text();
     if (currentPath) untrack(() => props.onChange(currentPath!, text));
+  });
+  createEffect(() => {
+    const outside = props.text?.();
+    if (outside !== undefined && untrack(() => props.path()) === currentPath) untrack(() => doc.sync(outside));
   });
 
   // Caret blink, restarted by every move.
@@ -140,6 +142,12 @@ export function Editor(props: {
     queueMicrotask(reveal);
     setTimeout(reveal, 16);
   };
+
+  // After goto exists: opening a note with a target offset (search hit, daily note) jumps there.
+  createEffect(() => {
+    const jump = props.jump?.();
+    if (jump && jump.path === untrack(() => props.path())) untrack(() => goto(jump.offset));
+  });
 
   const linkAt = (offset: number) => {
     const row = untrack(layout).rows[rowAt(untrack(layout), offset)]!;
@@ -367,7 +375,7 @@ export function Editor(props: {
   return (
     <Scroll
       grow={1}
-      background={() => colors.editor}
+      background={() => colors.page}
       ref={(el) => (scroller = el)}
       onResize={(s) => (setViewWidth(s.width), setViewHeight(s.height))}
     >

@@ -2,7 +2,8 @@
 // Each <App /> creates one (the tests too, over a memory vault) and passes it down.
 
 import { batch, createMemo, createSignal, untrack } from "@nodebuilderjs/core";
-import { type Heading, type WikiLink, folderOf, noteName, parseHeadings, parseLinks, parseTags, renameLinks, resolveLink } from "./vault/markdown.js";
+import { type Heading, type Task, type WikiLink, folderOf, noteName, parseHeadings, parseLinks, parseTags, parseTasks, renameLinks, resolveLink, toggleTaskAt } from "./vault/markdown.js";
+import { DAILY_FOLDER, dailyTemplate } from "./vault/welcome.js";
 import type { Vault } from "./vault/vault.js";
 
 export interface SearchHit {
@@ -22,7 +23,10 @@ interface Parsed {
   links: WikiLink[];
   headings: Heading[];
   tags: string[];
+  tasks: Task[];
 }
+
+export type VaultTask = Task & { path: string };
 
 const SAVE_DELAY = 400;
 
@@ -38,13 +42,19 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
   const [forward, setForward] = createSignal<string[]>([]);
 
   const texts = new Map<string, string>();
+  // When each note was last written or opened, for "recent notes".
+  const touched = new Map<string, number>();
   const parsed = new Map<string, Parsed>();
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const delay = options.saveDelay ?? SAVE_DELAY;
 
   const refresh = () => {
     const { files: f, folders: d } = vault.list();
-    for (const p of f) if (!texts.has(p)) texts.set(p, vault.read(p));
+    for (const p of f) {
+      if (texts.has(p)) continue;
+      texts.set(p, vault.read(p));
+      touched.set(p, vault.mtime(p));
+    }
     for (const p of [...texts.keys()]) if (!f.includes(p)) texts.delete(p);
     batch(() => {
       setFiles(f);
@@ -58,7 +68,7 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
     const text = texts.get(path) ?? "";
     const cached = parsed.get(path);
     if (cached?.text === text) return cached;
-    const p = { text, links: parseLinks(text), headings: parseHeadings(text), tags: parseTags(text) };
+    const p = { text, links: parseLinks(text), headings: parseHeadings(text), tags: parseTags(text), tasks: parseTasks(text) };
     parsed.set(path, p);
     return p;
   };
@@ -88,6 +98,8 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
         setForward([]);
       }
       setActive(path);
+      touched.set(path, Date.now());
+      bump(0);
       if (opts.offset !== undefined) setJump({ path, offset: opts.offset });
     });
   };
@@ -96,6 +108,7 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
     const path = uniquePath(folder, name.trim() || "Sem título");
     vault.write(path, text);
     texts.set(path, text);
+    touched.set(path, Date.now());
     refresh();
     open(path);
     return path;
@@ -131,6 +144,7 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
     write(path: string, text: string) {
       if (texts.get(path) === text) return;
       texts.set(path, text);
+      touched.set(path, Date.now());
       bump(0);
       clearTimeout(timers.get(path));
       timers.set(path, setTimeout(() => flush(path), delay));
@@ -245,6 +259,40 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
       const out: [string, string][] = [];
       for (const [from, links] of linkIndex()) for (const { to } of links) if (to && to !== from) out.push([from, to]);
       return out;
+    },
+
+    /** Every task in the vault, note by note. */
+    tasks(): VaultTask[] {
+      version();
+      return files().flatMap((path) => parse(path).tasks.map((t) => ({ ...t, path })));
+    },
+    /** Checks or unchecks the task whose line starts at `offset`. */
+    toggleTask(path: string, offset: number) {
+      ws.write(path, toggleTaskAt(texts.get(path) ?? "", offset));
+    },
+    /** Notes by last change or visit, newest first. */
+    recent(limit = 8) {
+      version();
+      return [...files()].sort((a, b) => (touched.get(b) ?? 0) - (touched.get(a) ?? 0)).slice(0, limit);
+    },
+
+    dailyPath: (iso: string) => `${DAILY_FOLDER}/${iso}.md`,
+    hasNote: (path: string) => (version(), texts.has(path)),
+    /** Opens the daily note of a day ("YYYY-MM-DD"), creating it from the template. */
+    openDaily(iso: string) {
+      const path = ws.dailyPath(iso);
+      if (!texts.has(path)) {
+        const text = dailyTemplate(iso);
+        vault.write(path, text);
+        texts.set(path, text);
+        touched.set(path, Date.now());
+        refresh();
+      }
+      // The caret goes to the empty first task, ready to type.
+      const text = texts.get(path)!;
+      const empty = text.indexOf("- [ ] \n");
+      open(path, { offset: empty >= 0 ? empty + 6 : text.length });
+      return path;
     },
 
     search(query: string, limit = 50): SearchHit[] {

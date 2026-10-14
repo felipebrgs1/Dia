@@ -62,6 +62,41 @@ export function parseHeadings(text: string): Heading[] {
   return out;
 }
 
+export interface Task {
+  /** Offset of the line start: what `toggleTask` takes. */
+  offset: number;
+  done: boolean;
+  /** The task text, without the checkbox and the due date. */
+  text: string;
+  /** "YYYY-MM-DD" from `📅 2026-10-14` (the Obsidian Tasks format) or `@2026-10-14`. */
+  due?: string;
+}
+
+const TASK = /^\s*(?:[-*+]|\d+[.)]) \[([ xX])\] (.*)$/;
+const DUE = /\s*(?:📅\s*|@)(\d{4}-\d{2}-\d{2})/u;
+
+export function parseTasks(text: string): Task[] {
+  const out: Task[] = [];
+  eachProseLine(text, (line, offset) => {
+    const m = TASK.exec(line);
+    if (!m) return;
+    const due = DUE.exec(m[2]!);
+    const body = plainText(due ? m[2]!.replace(due[0], "") : m[2]!).trim();
+    if (body || due) out.push({ offset, done: m[1] !== " ", text: body, due: due?.[1] });
+  });
+  return out;
+}
+
+/** Switches the checkbox of the task line starting at `offset`; the text is unchanged if it is not a task. */
+export function toggleTaskAt(text: string, offset: number) {
+  const end = text.indexOf("\n", offset);
+  const line = text.slice(offset, end < 0 ? text.length : end);
+  const m = /^(\s*(?:[-*+]|\d+[.)]) \[)([ xX])\]/.exec(line);
+  if (!m) return text;
+  const at = offset + m[1]!.length;
+  return text.slice(0, at) + (m[2] === " " ? "x" : " ") + text.slice(at + 1);
+}
+
 export function parseTags(text: string): string[] {
   const out = new Set<string>();
   eachProseLine(text, (line) => {
@@ -94,6 +129,16 @@ export function renameLinks(text: string, old: string, next: string) {
     if (t !== o && noteName(t) !== o) return all;
     return `[[${next}${heading !== undefined ? `#${heading}` : ""}${alias !== undefined ? `|${alias}` : ""}]]`;
   });
+}
+
+/** Inline markdown as plain text, for lists: `[[a|b]]` → b, `**x**` → x, `` `c` `` → c. */
+export function plainText(text: string) {
+  return text
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]]+)\]\]/g, (_, t: string) => t.split("#")[0]!)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/(\*\*|__|~~|==|`)(.+?)\1/g, "$2")
+    .replace(/(^|[^\w*])[*_]([^*_]+)[*_]/g, "$1$2");
 }
 
 export function countWords(text: string) {

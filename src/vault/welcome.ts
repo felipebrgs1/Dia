@@ -1,45 +1,60 @@
-// Notes written into a brand-new vault.
+// Notes written into a brand-new vault: a welcome page, a daily note for today and a project
+// with dated tasks, so the home screen and the calendar have something to show.
 
-export const WELCOME: Record<string, string> = {
-  "Bem-vindo.md": `Este é o seu **cofre**: uma pasta comum de arquivos \`.md\` no disco. Tudo o que você escreve é salvo sozinho.
+import { addDays, longDate, today } from "../dates.js";
+
+export const DAILY_FOLDER = "Diário";
+
+/** A new daily note. */
+export function dailyTemplate(iso: string) {
+  return `# ${longDate(iso)}\n\n## Tarefas\n- [ ] \n\n## Notas\n`;
+}
+
+export function welcomeNotes(day = today()): Record<string, string> {
+  return {
+    "Bem-vindo ao Dia.md": `O **Dia** junta suas notas, tarefas e calendário num lugar só. Tudo fica numa pasta comum de arquivos \`.md\` no seu disco, salvo sozinho.
 
 ## Comece por aqui
-- Crie uma nota com **Ctrl+N** ou com o botão na barra lateral.
-- Abra qualquer nota rápido com **Ctrl+O**.
-- Busque em todas as notas com **Ctrl+Shift+F**.
-- Ligue notas escrevendo [[Links internos]] entre colchetes duplos.
-- Veja como tudo se conecta na [[Visão de grafo]].
+- A tela **Hoje** mostra a nota do dia, as tarefas abertas e o mês.
+- No **Calendário**, cada dia tem a sua nota diária. Clique num dia para abrir.
+- Crie uma nota com **Ctrl+N** e abra qualquer uma com **Ctrl+O**.
+- Ligue notas com [[Links e tarefas|colchetes duplos]] e veja tudo no grafo (**Ctrl+G**).
 
 ## Tarefas
-- [x] Abrir o app
-- [ ] Escrever a primeira nota
-- [ ] Criar um link para outra nota
+- [x] Abrir o Dia
+- [ ] Escrever na nota de hoje
+- [ ] Marcar uma tarefa com prazo 📅 ${addDays(day, 1)}
 
-> Dica: clique em um link para abrir a nota (ou Ctrl+Enter com o cursor nele). Se ela não existir, ela é criada.
+> Dica: clique num link para abrir a nota. Se ela não existir, ela é criada.
 
 #inicio
 `,
-  "Links internos.md": `Escreva \`[[Nome da nota]]\` para ligar notas. Também funciona:
-- \`[[Nome da nota|texto mostrado]]\`
-- \`[[Nome da nota#Seção]]\`
+    "Links e tarefas.md": `Escreva \`[[Nome da nota]]\` para ligar notas; o painel da direita mostra quem aponta para cada uma.
 
-O painel à direita mostra os **backlinks**: as notas que apontam para a nota aberta.
+Tarefas são linhas \`- [ ] \`. Para dar um prazo, termine com \`📅 AAAA-MM-DD\` (ou \`@AAAA-MM-DD\`): ela aparece no dia certo do calendário.
 
-Voltar para [[Bem-vindo]].
+Voltar para [[Bem-vindo ao Dia]].
 `,
-  "Visão de grafo.md": `O botão de grafo na barra da esquerda (ou Ctrl+G) mostra cada nota como um ponto e cada link como uma linha. Clique em um ponto para abrir a nota.
+    "Projetos/Dia.md": `Um app de produtividade feito com nodebuilder.
 
-Veja também [[Links internos]] e [[Ideias/Projetos]].
-`,
-  "Ideias/Projetos.md": `Notas podem ficar em pastas. Esta está em \`Ideias/\`.
+## Próximos passos
+- [ ] Revisar as ideias 📅 ${addDays(day, 2)}
+- [ ] Planejar a semana 📅 ${addDays(day, 5)}
+- [x] Escolher as cores
 
 \`\`\`ts
-// blocos de código ficam destacados
-const ideia = "clone do Obsidian";
+const app = "Dia";
 \`\`\`
-
----
 
 Ideias soltas: ==destaque==, *ênfase*, ~~riscado~~ e #ideias.
 `,
-};
+    [`${DAILY_FOLDER}/${day}.md`]: `# ${longDate(day)}
+
+## Tarefas
+- [ ] Conhecer o [[Bem-vindo ao Dia|Dia]]
+- [ ] Criar a primeira nota
+
+## Notas
+`,
+  };
+}
