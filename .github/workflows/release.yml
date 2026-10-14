@@ -1,0 +1,60 @@
+# Builds and publishes a release when a version tag (v1.2.3) is pushed. Only the owner can
+# create v* tags (tag ruleset), and the tag must point to a commit that is on main: a tag on
+# any other branch fails here before building anything.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.repository == 'felipebrgs1/Dia'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the release and upload its files
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: The tag must be on main
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME ($GITHUB_SHA) is not on main; releases are only built from main."
+            exit 1
+          fi
+
+      - name: The tag matches package.json
+        run: |
+          version="$(jq -r .version package.json)"
+          if [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME but package.json says $version"
+            exit 1
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+
+      - name: Package (AppImage, deb, rpm, tar.gz)
+        run: bun run package
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --verify-tag \
+            --title "Dia $GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes "Instalar ou atualizar: \`curl -fsSL https://raw.githubusercontent.com/felipebrgs1/Dia/main/install.sh | bash\`"

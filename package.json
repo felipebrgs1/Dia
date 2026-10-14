@@ -8,7 +8,7 @@
     "dev": "bun --watch src/main.tsx",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "package": "nodebuilder package src/main.tsx --title \"Dia\" --app-id dev.nodebuilder.dia",
+    "package": "nodebuilder package src/main.tsx --name dia --title \"Dia\" --app-id dev.nodebuilder.dia --icon src/assets/dia.svg --categories \"Office;Calendar;Utility;\"",
     "screenshot": "nodebuilder screenshot src/main.tsx screenshot.png",
     "doctor": "nodebuilder doctor",
     "icons:add": "nodebuilder icons add --out src/icons.ts",
@@ -22,5 +22,8 @@
   "devDependencies": {
     "@types/bun": "^1.4.2",
     "typescript": "7.0.2"
-  }
+  },
+  "description": "Notas em markdown, tarefas e calend\u00e1rio num lugar s\u00f3",
+  "homepage": "https://github.com/felipebrgs1/Dia",
+  "license": "MIT"
 }

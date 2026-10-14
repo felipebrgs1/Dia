@@ -5,6 +5,20 @@ calendário com notas diárias, num visual claro e quente (com tema escuro). Fei
 [nodebuilder](https://www.npmjs.com/package/@nodebuilderjs/core) 0.4.1: TSX com reatividade estilo
 SolidJS, desenhado por um core nativo (Wayland/X11 + GLES), sem DOM nem Electron.
 
+## Instalar
+
+Linux x86_64 com glibc 2.34+ (Ubuntu 22.04+, Debian 12+, Fedora 35+, Arch...), sem sudo:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/felipebrgs1/Dia/main/install.sh | bash
+```
+
+Instala em `~/.local` (comando `dia` e atalho no menu); rodar de novo atualiza. Remover:
+`curl -fsSL https://raw.githubusercontent.com/felipebrgs1/Dia/main/install.sh | bash -s -- --uninstall`.
+Também há AppImage, `.deb` e `.rpm` em [Releases](https://github.com/felipebrgs1/Dia/releases).
+
+## Desenvolver
+
 ```sh
 bun run dev [pasta-do-cofre]   # abre a janela e reinicia ao salvar
 bun start [pasta-do-cofre]     # roda uma vez
@@ -14,6 +28,9 @@ bun run screenshot             # screenshot.png sem abrir janela (com as notas d
 bun run doctor                 # verifica core nativo, display, fontes e GL
 bun run icons:add <nomes...>   # adiciona ícones Lucide em src/icons.ts
 bun run package                # AppImage, .deb, .rpm e .tar.gz em dist/
+
+# Release: só o dono cria tags v* (ruleset); o workflow só publica se a tag estiver na main
+# e bater com a "version" do package.json:  git tag v0.1.0 && git push origin v0.1.0
 ```
 
 Screenshot de uma tela específica:
