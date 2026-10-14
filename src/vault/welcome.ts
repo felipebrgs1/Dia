@@ -16,6 +16,7 @@ export function welcomeNotes(day = today()): Record<string, string> {
 
 ## Comece por aqui
 - A tela **Hoje** mostra a nota do dia, as tarefas abertas e o mês.
+- O **Quadro** junta as tarefas de todas as notas em A fazer, Fazendo (\`- [/]\`) e Feito. Arraste os cartões entre as colunas.
 - No **Calendário**, cada dia tem a sua nota diária. Na **Semana**, arraste num horário vazio para criar um evento; arraste um evento para mudar dia e hora, ou a borda de baixo para mudar a duração.
 - Crie uma nota com **Ctrl+N** e abra qualquer uma com **Ctrl+O**.
 - Ligue notas com [[Links e tarefas|colchetes duplos]] e veja tudo no grafo (**Ctrl+G**).
@@ -40,6 +41,7 @@ Voltar para [[Bem-vindo ao Dia]].
     "Projetos/Dia.md": `Um app de produtividade feito com nodebuilder.
 
 ## Próximos passos
+- [/] Montar o quadro de tarefas
 - [ ] Revisar as ideias 📅 ${addDays(day, 2)}
 - [ ] Planejar a semana 📅 ${addDays(day, 5)}
 - [x] Escolher as cores

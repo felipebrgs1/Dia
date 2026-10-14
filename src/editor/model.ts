@@ -12,7 +12,7 @@ interface Snapshot {
 
 type EditKind = "type" | "delete" | "other";
 
-const LIST = /^(\s*)([-*+]|(\d+)([.)]))( \[[ xX]\])? /;
+const LIST = /^(\s*)([-*+]|(\d+)([.)]))( \[[ xX/]\])? /;
 const WORD = /[\p{L}\p{N}_]/u;
 const INDENT = "    ";
 
@@ -232,7 +232,8 @@ export function createDocument(initial = "") {
       if (!m?.[5]) return false;
       const box = ls + m[0].length - 3; // the character inside the brackets
       const caret = untrack(head);
-      replace(box, box + 1, m[5].trim() === "[ ]" ? "x" : " ", caret);
+      // Done goes back to open; open and in progress ("[/]") become done.
+      replace(box, box + 1, /[xX]/.test(m[5]) ? " " : "x", caret);
       return true;
     },
 

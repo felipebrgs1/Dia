@@ -158,9 +158,9 @@ test("tasks: parsed with due dates and toggled in place", async () => {
   const { parseTasks, toggleTaskAt } = await import("../src/vault/markdown.js");
   const text = "- [ ] comprar pão 📅 2026-10-15\n- [x] feito\n  - [ ] sub @2026-11-01\n```\n- [ ] no código\n```";
   expect(parseTasks(text)).toEqual([
-    { offset: 0, done: false, text: "comprar pão", due: "2026-10-15" },
-    { offset: 32, done: true, text: "feito", due: undefined },
-    { offset: 44, done: false, text: "sub", due: "2026-11-01" },
+    { offset: 0, done: false, status: "todo", text: "comprar pão", due: "2026-10-15" },
+    { offset: 32, done: true, status: "done", text: "feito", due: undefined },
+    { offset: 44, done: false, status: "todo", text: "sub", due: "2026-11-01" },
   ]);
   expect(toggleTaskAt(text, 32).split("\n")[1]).toBe("- [ ] feito");
   expect(toggleTaskAt(text, 0).startsWith("- [x] comprar")).toBe(true);
@@ -236,4 +236,17 @@ test("workspace: events move between days and are created in daily notes", () =>
   expect(ws.read("Diário/2026-10-15.md")).toContain("## Agenda\n- 10:00 - 11:00 Reunião");
   ws.addEvent("2026-10-15", 480, 510, "Café");
   expect(ws.events().map((e) => `${e.date} ${e.start} ${e.title}`)).toEqual(["2026-10-15 480 Café", "2026-10-15 600 Reunião"]);
+});
+
+test("task status: [/] is in progress; set, toggle and insert tasks", async () => {
+  const { parseTasks, setTaskStatusAt, toggleTaskAt, insertTask } = await import("../src/vault/markdown.js");
+  const text = "- [/] fazendo\n- [ ] 15:00 - 16:00 com hora";
+  expect(parseTasks(text).map((t) => [t.status, t.text])).toEqual([["doing", "fazendo"], ["todo", "com hora"]]);
+  expect(setTaskStatusAt(text, 0, "done").startsWith("- [x] fazendo")).toBe(true);
+  expect(setTaskStatusAt(text, 14, "doing")).toContain("- [/] 15:00");
+  expect(toggleTaskAt(text, 0).startsWith("- [x]")).toBe(true); // doing → done
+  // The daily template's empty "- [ ] " is replaced; otherwise after the last task.
+  expect(insertTask("# D\n\n## Tarefas\n- [ ] \n\n## Notas\n", "- [ ] Nova")).toBe("# D\n\n## Tarefas\n- [ ] Nova\n\n## Notas\n");
+  expect(insertTask("## Tarefas\n- [x] a\nobs\n## Notas", "- [ ] b")).toBe("## Tarefas\n- [x] a\n- [ ] b\nobs\n## Notas");
+  expect(insertTask("# Sem seção", "- [ ] c")).toBe("# Sem seção\n\n## Tarefas\n- [ ] c\n");
 });

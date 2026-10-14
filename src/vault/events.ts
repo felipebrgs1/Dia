@@ -19,7 +19,7 @@ export interface DayEvent {
 
 export const DEFAULT_LENGTH = 30;
 const FENCE = /^\s*(```|~~~)/;
-const EVENT = /^(\s*[-*+] (?:\[([ xX])\] )?)(\d{1,2}):(\d{2})(?:\s*[-–]\s*(\d{1,2}):(\d{2}))?\s+(.*)$/;
+const EVENT = /^(\s*[-*+] (?:\[([ xX/])\] )?)(\d{1,2}):(\d{2})(?:\s*[-–]\s*(\d{1,2}):(\d{2}))?\s+(.*)$/;
 
 export function formatTime(minutes: number) {
   const m = Math.max(0, Math.min(24 * 60, Math.round(minutes)));
@@ -44,7 +44,7 @@ export function parseEvents(text: string): DayEvent[] {
         const start = h * 60 + Number(m[4]);
         let end = m[5] !== undefined ? Number(m[5]) * 60 + Number(m[6]) : start + DEFAULT_LENGTH;
         if (end <= start) end = Math.min(24 * 60, start + DEFAULT_LENGTH);
-        out.push({ offset, start, end, title: m[7]!.trim(), done: m[2] === undefined ? undefined : m[2] !== " " });
+        out.push({ offset, start, end, title: m[7]!.trim(), done: m[2] === undefined ? undefined : /[xX]/.test(m[2]) });
       }
     }
     offset += line.length + 1;

@@ -73,7 +73,7 @@ const FENCE = /^\s*(```|~~~)/;
 const HEADING = /^(#{1,6})(\s+)/;
 const HR = /^\s*([-*_])(\s*\1){2,}\s*$/;
 const QUOTE = /^(\s*>+\s?)/;
-const LIST = /^(\s*)([-*+]|\d+[.)])( \[[ xX]\])?( )/;
+const LIST = /^(\s*)([-*+]|\d+[.)])( \[[ xX/]\])?( )/;
 const INLINE =
   /(`+)([^`\n]+?)\1|\[\[([^\[\]\n]+)\]\]|(\*\*|__)(?=\S)(.+?)(?<=\S)\4|(\*|_)(?=\S)([^*_\n]+?)(?<=\S)\6|~~(.+?)~~|==(.+?)==|\[([^\]\n]+)\]\(([^)\n]+)\)|(?<![\p{L}\p{N}_&#/])(#[\p{L}_][\p{L}\p{N}_/-]*)|(https?:\/\/[^\s)>\]]+)/gu;
 
@@ -103,7 +103,7 @@ function styleLine(line: string, base: PieceStyle): { styles: PieceStyle[]; link
       const markerEnd = start + list[1]!.length + list[2]!.length;
       paint(start + list[1]!.length, markerEnd, { role: "accent", bold: true });
       if (list[3]) {
-        const done = list[3].trim() !== "[ ]";
+        const done = /[xX]/.test(list[3]);
         paint(markerEnd, markerEnd + list[3].length, { role: "accent" });
         if (done) paint(markerEnd + list[0].length - list[1]!.length - list[2]!.length, line.length, { role: "muted" });
       }

@@ -62,17 +62,22 @@ export function parseHeadings(text: string): Heading[] {
   return out;
 }
 
+export type TaskStatus = "todo" | "doing" | "done";
+const STATUS_CHAR: Record<TaskStatus, string> = { todo: " ", doing: "/", done: "x" };
+
 export interface Task {
   /** Offset of the line start: what `toggleTask` takes. */
   offset: number;
   done: boolean;
+  /** `[ ]` todo, `[/]` doing (the Obsidian Tasks "in progress" mark), `[x]` done. */
+  status: TaskStatus;
   /** The task text, without the checkbox and the due date. */
   text: string;
   /** "YYYY-MM-DD" from `📅 2026-10-14` (the Obsidian Tasks format) or `@2026-10-14`. */
   due?: string;
 }
 
-const TASK = /^\s*(?:[-*+]|\d+[.)]) \[([ xX])\] (.*)$/;
+const TASK = /^\s*(?:[-*+]|\d+[.)]) \[([ xX/])\] (.*)$/;
 const DUE = /\s*(?:📅\s*|@)(\d{4}-\d{2}-\d{2})/u;
 
 export function parseTasks(text: string): Task[] {
@@ -83,19 +88,47 @@ export function parseTasks(text: string): Task[] {
     const due = DUE.exec(m[2]!);
     // A leading time ("15:00 - 16:30 ...") makes it an event too; the list shows the title only.
     const body = plainText((due ? m[2]!.replace(due[0], "") : m[2]!).replace(/^\d{1,2}:\d{2}(?:\s*[-–]\s*\d{1,2}:\d{2})?\s+/, "")).trim();
-    if (body || due) out.push({ offset, done: m[1] !== " ", text: body, due: due?.[1] });
+    const status: TaskStatus = m[1] === " " ? "todo" : m[1] === "/" ? "doing" : "done";
+    if (body || due) out.push({ offset, done: status === "done", status, text: body, due: due?.[1] });
   });
   return out;
 }
 
-/** Switches the checkbox of the task line starting at `offset`; the text is unchanged if it is not a task. */
-export function toggleTaskAt(text: string, offset: number) {
+/** Sets the status of the task line starting at `offset`; the text is unchanged if it is not a task. */
+export function setTaskStatusAt(text: string, offset: number, status: TaskStatus) {
   const end = text.indexOf("\n", offset);
   const line = text.slice(offset, end < 0 ? text.length : end);
-  const m = /^(\s*(?:[-*+]|\d+[.)]) \[)([ xX])\]/.exec(line);
+  const m = /^(\s*(?:[-*+]|\d+[.)]) \[)([ xX/])\]/.exec(line);
   if (!m) return text;
   const at = offset + m[1]!.length;
-  return text.slice(0, at) + (m[2] === " " ? "x" : " ") + text.slice(at + 1);
+  return text.slice(0, at) + STATUS_CHAR[status] + text.slice(at + 1);
+}
+
+/** The checkbox: done goes back to todo; todo and doing become done. */
+export function toggleTaskAt(text: string, offset: number) {
+  const end = text.indexOf("\n", offset);
+  const m = /\[([ xX/])\]/.exec(text.slice(offset, end < 0 ? text.length : end));
+  return m ? setTaskStatusAt(text, offset, /[xX]/.test(m[1]!) ? "todo" : "done") : text;
+}
+
+/**
+ * Adds a task line to a note's "## Tarefas" section: in place of an empty "- [ ] " left by the
+ * daily template, else after the section's last task (the section is created at the end if missing).
+ */
+export function insertTask(text: string, line: string) {
+  const lines = text.split("\n");
+  const section = lines.findIndex((l) => /^#{1,6}\s+tarefas\s*$/i.test(l));
+  if (section < 0) return `${text.replace(/\n*$/, "")}\n\n## Tarefas\n${line}\n`;
+  let end = lines.findIndex((l, i) => i > section && /^#{1,6}\s/.test(l));
+  if (end < 0) end = lines.length;
+  const empty = lines.findIndex((l, i) => i > section && i < end && /^\s*[-*+] \[ \]\s*$/.test(l));
+  if (empty >= 0) lines[empty] = line;
+  else {
+    let at = section + 1;
+    for (let i = section + 1; i < end; i++) if (/^\s*[-*+] \[[ xX/]\]/.test(lines[i]!)) at = i + 1;
+    lines.splice(at, 0, line);
+  }
+  return lines.join("\n");
 }
 
 export function parseTags(text: string): string[] {

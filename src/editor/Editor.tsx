@@ -36,7 +36,7 @@ const MAX_WIDTH = 720;
 const SIDE_PADDING = 40;
 const FONT_SIZE = 16;
 const MONO = "'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace";
-const TASK = /^(\s*(?:>+\s?)?\s*(?:[-*+]|\d+[.)]) )\[[ xX]\]/;
+const TASK = /^(\s*(?:>+\s?)?\s*(?:[-*+]|\d+[.)]) )\[[ xX/]\]/;
 
 export function Editor(props: {
   path: () => string | null;

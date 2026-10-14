@@ -20,6 +20,11 @@ export function TaskRow(props: { ws: Workspace; task: VaultTask; showNote?: bool
       >
         {t.text || "(sem texto)"}
       </Text>
+      <Show when={() => t.status === "doing"}>
+        <Row padding={[2, 8]} radius={10} background={() => colors.active}>
+          <Text fontSize={11} bold color={() => theme.accent.pressed}>fazendo</Text>
+        </Row>
+      </Show>
       <Show when={() => t.due}>
         <Row padding={[2, 8]} radius={10} background={() => (overdue ? "#e01b2422" : colors.tagBg)}>
           <Text fontSize={12} color={() => (overdue ? theme.danger.base : colors.link)}>{() => shortDate(t.due!)}</Text>

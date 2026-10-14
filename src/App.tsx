@@ -20,6 +20,7 @@ import {
   theme,
   windowControls,
 } from "@nodebuilderjs/core";
+import { BoardView } from "./components/BoardView.js";
 import { CalendarView } from "./components/Calendar.js";
 import { FileExplorer } from "./components/FileExplorer.js";
 import { GraphView } from "./components/GraphView.js";
@@ -44,6 +45,7 @@ import {
   notebookPen,
   panelRight,
   search as searchIcon,
+  squareKanban,
   sun,
 } from "./icons.js";
 import { applyTheme, colors } from "./theme.js";
@@ -211,6 +213,7 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string; v
       <Column padding={[10, 8, 6, 8]} gap={1}>
         <NavItem icon={house} label="Hoje" view="home" />
         <NavItem icon={calendarDays} label="Calendário" view="calendar" />
+        <NavItem icon={squareKanban} label="Quadro" view="board" />
         <NavItem icon={graphIcon} label="Grafo" view="graph" hint="Ctrl G" />
         <Row
           gap={10}
@@ -321,6 +324,9 @@ export function App(props: { vault?: Vault; vaultPath?: string; note?: string; v
           </Match>
           <Match when={() => ui.view() === "calendar"}>
             <CalendarView ws={ws} ui={ui} />
+          </Match>
+          <Match when={() => ui.view() === "board"}>
+            <BoardView ws={ws} ui={ui} />
           </Match>
           <Match when={() => ui.view() === "graph"}>
             <GraphView ws={ws} ui={ui} />

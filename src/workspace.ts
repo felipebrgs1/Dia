@@ -2,10 +2,26 @@
 // Each <App /> creates one (the tests too, over a memory vault) and passes it down.
 
 import { batch, createMemo, createSignal, untrack } from "@nodebuilderjs/core";
-import { type Heading, type Task, type WikiLink, folderOf, noteName, parseHeadings, parseLinks, parseTags, parseTasks, renameLinks, resolveLink, toggleTaskAt } from "./vault/markdown.js";
+import {
+  type Heading,
+  type Task,
+  type TaskStatus,
+  type WikiLink,
+  folderOf,
+  insertTask,
+  noteName,
+  parseHeadings,
+  parseLinks,
+  parseTags,
+  parseTasks,
+  renameLinks,
+  resolveLink,
+  setTaskStatusAt,
+  toggleTaskAt,
+} from "./vault/markdown.js";
 import { DAILY_FOLDER, dailyTemplate } from "./vault/welcome.js";
 import { type DayEvent, eventLine, formatTime, insertEvent, parseEvents, removeLine, setEventTime, setEventTitle } from "./vault/events.js";
-import { dailyDateOf } from "./dates.js";
+import { dailyDateOf, today as isoToday } from "./dates.js";
 import type { Vault } from "./vault/vault.js";
 
 export interface SearchHit {
@@ -288,6 +304,16 @@ export function createWorkspace(vault: Vault, options: { saveDelay?: number } = 
     /** Checks or unchecks the task whose line starts at `offset`. */
     toggleTask(path: string, offset: number) {
       ws.write(path, toggleTaskAt(texts.get(path) ?? "", offset));
+    },
+    setTaskStatus(path: string, offset: number, status: TaskStatus) {
+      ws.write(path, setTaskStatusAt(texts.get(path) ?? "", offset, status));
+    },
+    /** A new task in the "Tarefas" section of a day's note (today by default). */
+    addTask(text: string, status: TaskStatus = "todo", date = isoToday()) {
+      const path = ensureDaily(date);
+      const mark = status === "doing" ? "/" : status === "done" ? "x" : " ";
+      ws.write(path, insertTask(texts.get(path)!, `- [${mark}] ${text.trim()}`));
+      return path;
     },
     /** Notes by last change or visit, newest first. */
     recent(limit = 8) {

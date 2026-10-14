@@ -6,7 +6,7 @@ import type { EditorApi } from "./editor/Editor.js";
 
 export type LeftTab = "files" | "search" | "tags";
 export type RightTab = "backlinks" | "outgoing" | "outline";
-export type View = "home" | "calendar" | "editor" | "graph";
+export type View = "home" | "calendar" | "board" | "editor" | "graph";
 export type CalendarMode = "month" | "week";
 
 export function createUi() {

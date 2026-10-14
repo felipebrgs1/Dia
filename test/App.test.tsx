@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { setTheme } from "@nodebuilderjs/core";
-import { click, findAll, findByLabel, findByText, interact, mount } from "@nodebuilderjs/core/testing";
+import { click, findAll, findByLabel, findByPlaceholder, findByText, interact, mount } from "@nodebuilderjs/core/testing";
 import { App } from "../src/App.js";
 import { today, weekOf } from "../src/dates.js";
 import { memoryVault } from "../src/vault/vault.js";
@@ -146,4 +146,35 @@ test("week view: dragging an event moves it to another day and time", async () =
   const tomorrow = weekOf(today())[todayIndex + 1]!;
   expect(vault.read(`Diário/${today()}.md`)).not.toContain("Almoço");
   expect(vault.read(`Diário/${tomorrow}.md`)).toContain("- 13:30 - 14:30 Almoço");
+});
+
+test("board: tasks in three columns, drag a card to change status, add and filter", async () => {
+  const { root, ui, relayout, vault } = setup();
+  click(findByText(root, "Quadro")!);
+  relayout();
+  expect(findByText(root, "Montar o quadro de tarefas")).toBeDefined(); // [/] → Fazendo
+  expect(findByText(root, "Escolher as cores")).toBeDefined(); // [x] → Feito
+
+  // Drag "Revisar as ideias" from "A fazer" into "Fazendo".
+  const card = findByText(root, "Revisar as ideias")!;
+  const doing = findByText(root, "Fazendo", { in: "Row" })!.parent!;
+  ui.drag(card, doing.x + doing.width / 2 - card.x, doing.y + 80 - card.y);
+  relayout();
+  await saved();
+  expect(vault.read("Projetos/Dia.md")).toContain("- [/] Revisar as ideias");
+
+  // A new task goes to today's note.
+  ui.press(findByPlaceholder(root, /Nova tarefa/)!);
+  ui.type("Comprar café");
+  ui.key("Return");
+  relayout();
+  await saved();
+  expect(vault.read(`Diário/${today()}.md`)).toContain("- [ ] Comprar café");
+
+  // The filter keeps only matching cards.
+  ui.press(findByPlaceholder(root, "Filtrar tarefas")!);
+  ui.type("café");
+  relayout();
+  expect(findByText(root, "Comprar café")).toBeDefined();
+  expect(findByText(root, "Revisar as ideias")).toBeUndefined();
 });

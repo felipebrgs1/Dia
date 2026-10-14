@@ -26,5 +26,6 @@ import panelRight from "lucide-static/icons/panel-right.svg" with { type: "text"
 import pencil from "lucide-static/icons/pencil.svg" with { type: "text" }; export { pencil };
 import search from "lucide-static/icons/search.svg" with { type: "text" }; export { search };
 import sparkles from "lucide-static/icons/sparkles.svg" with { type: "text" }; export { sparkles };
+import squareKanban from "lucide-static/icons/square-kanban.svg" with { type: "text" }; export { squareKanban };
 import sun from "lucide-static/icons/sun.svg" with { type: "text" }; export { sun };
 import trash2 from "lucide-static/icons/trash-2.svg" with { type: "text" }; export { trash2 };

@@ -33,6 +33,9 @@ Notas de exemplo só são criadas quando a pasta ainda não existe.
   do Day Planner; `- [ ] 09:00 Ligar` também vale, 30 min sem fim). Na Semana: arraste no vazio
   para criar, arraste um evento para mudar dia/hora, a borda de baixo para a duração, clique
   para editar ou excluir. Tudo é reescrito na própria linha do arquivo.
+- **Quadro** (kanban): as tarefas de todas as notas em A fazer `- [ ]`, Fazendo `- [/]` (a marca
+  "em andamento" do plugin Tasks) e Feito `- [x]`. Arrastar um cartão reescreve a marca na linha
+  da tarefa; clicar abre a nota nela; "+ Nova tarefa" vai para a seção Tarefas da nota de hoje.
 - **Editor markdown** próprio (sobre `Canvas`): títulos, negrito, *itálico*, código em fonte
   mono, citações, listas, tarefas clicáveis, `[[links]]`; seleção, copiar/colar, desfazer.
 - **Links**: backlinks, links de saída e sumário no painel da direita; renomear atualiza links.
@@ -55,11 +58,11 @@ src/
   vault/                   arquivos no disco, markdown (links, tarefas, tags), eventos, notas de exemplo
   editor/                  modelo de texto, layout do markdown e o widget do editor
   graph/physics.ts         simulação de forças do grafo
-  components/              Hoje, Calendário (mês e semana), tarefas, explorador, busca, painel direito, grafo
+  components/              Hoje, Calendário (mês e semana), Quadro, tarefas, explorador, busca, painel direito, grafo
 test/
   core.test.ts             markdown, tarefas, datas, editor, layout, workspace, física
   App.test.tsx             o app montado sem janela: Hoje, tarefas, editor, Ctrl+K, calendário,
-                           semana (criar, editar e arrastar eventos), grafo
+                           semana (criar, editar e arrastar eventos), quadro (arrastar, adicionar, filtrar), grafo
 ```
 
 Requisitos: Linux com Wayland ou X11, [Bun](https://bun.sh) 1.4+.
