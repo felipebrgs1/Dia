@@ -51,7 +51,7 @@ import {
   squareKanban,
   sun,
 } from "./icons.js";
-import { applyTheme } from "./theme.js";
+import { applyTheme, followColorSpace } from "./theme.js";
 import { type LeftTab, type View, createUi } from "./ui.js";
 import { countWords, folderOf, noteName } from "./vault/markdown.js";
 import { type Vault, defaultVaultPath, memoryVault, openVault } from "./vault/vault.js";
@@ -83,6 +83,7 @@ export function App(
   const cals = createCalendars(vault, { fetcher: props.fetcher, autoRefresh: !demo });
   const ui = createUi();
   applyTheme(props.theme ?? "light");
+  followColorSpace();
 
   if (props.note && ws.files().includes(props.note)) {
     ws.open(props.note);

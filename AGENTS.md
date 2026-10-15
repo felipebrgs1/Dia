@@ -72,8 +72,12 @@ above: `nodebuilder agents update` replaces only the framework guide between the
 - Colors by name, never `() => colors.x` / `() => theme.x` in JSX: `background="sidebar"`,
   `color="text.secondary"`, conditionals as `color={() => (on() ? "accent.base" : "faint")}`.
   App tokens (light and dark, shadows included) live in `src/theme.ts`; code that needs the
-  value itself (Canvas drawing, string concatenation like `tint()`) reads `colors.x`. Accents are
-  `oklch()` for Display P3. Write `"transparent"`, not `"#00000000"`.
+  value itself (Canvas drawing, string concatenation like `tint()`) reads `colors.x`. Write
+  `"transparent"`, not `"#00000000"`.
+- Every theme color is `oklch()` for Display P3. Without a P3 surface, `src/color.ts` maps them
+  into sRGB (chroma scaled by sRGB edge / P3 edge, never clipped), which gives back the
+  original hex palette exactly. New colors: design in hex, convert with that same rule
+  (chroma × P3 edge / sRGB edge) and check `toSrgb()` returns the hex (`test/color.test.ts`).
 - Secondary text: `<Text variant="muted">` (same size), `"caption"` (12 px) or `"small"` (11 px,
   defined in `theme.ts`); or set `color`/`fontSize` once on the container (they inherit).
 - Hover is `hoverStyle`, never a signal + pointer events.
