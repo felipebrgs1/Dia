@@ -18,7 +18,6 @@ import {
   createMemo,
   createSignal,
   isScreenshot,
-  theme,
 } from "@nodebuilderjs/core";
 import appIcon from "./assets/dia.svg" with { type: "text" };
 import { CALENDAR_COLORS, type Fetcher, createCalendars } from "./calendars/store.js";
@@ -33,7 +32,6 @@ import { IconButton } from "./components/Item.js";
 import { QuickSwitcher } from "./components/QuickSwitcher.js";
 import { RightPanel } from "./components/RightPanel.js";
 import { SearchPanel, TagsPanel } from "./components/SearchPanel.js";
-import { Caption, Small } from "./components/Text.js";
 import { today } from "./dates.js";
 import { Editor } from "./editor/Editor.js";
 import {
@@ -53,7 +51,7 @@ import {
   squareKanban,
   sun,
 } from "./icons.js";
-import { applyTheme, colors } from "./theme.js";
+import { applyTheme } from "./theme.js";
 import { type LeftTab, type View, createUi } from "./ui.js";
 import { countWords, folderOf, noteName } from "./vault/markdown.js";
 import { type Vault, defaultVaultPath, memoryVault, openVault } from "./vault/vault.js";
@@ -64,7 +62,7 @@ import { createWorkspace } from "./workspace.js";
 const SIDEBAR_WIDTH = 248;
 
 function Line(props: { vertical?: boolean }) {
-  return props.vertical ? <Box width={1} background={() => colors.border} /> : <Box height={1} background={() => colors.border} />;
+  return props.vertical ? <Box width={1} background="border" /> : <Box height={1} background="border" />;
 }
 
 export function App(
@@ -163,15 +161,15 @@ export function App(
       padding={[7, 10]}
       radius={6}
       cursor="pointer"
-      background={() => (ui.view() === p.view ? colors.active : "transparent")}
-      hoverStyle={{ background: () => (ui.view() === p.view ? colors.active : colors.hover) }}
-      color={() => (ui.view() === p.view ? theme.text.primary : theme.text.secondary)}
+      background={() => (ui.view() === p.view ? "active" : "transparent")}
+      hoverStyle={{ background: () => (ui.view() === p.view ? "active" : "hover") }}
+      color={() => (ui.view() === p.view ? "text.primary" : "text.secondary")}
       onClick={() => ui.setView(p.view)}
     >
       <Icon svg={p.icon} size={17} strokeWidth={1.75} />
       <Text grow={1} bold={() => ui.view() === p.view}>{p.label}</Text>
       <Show when={() => p.hint}>
-        <Small color={() => colors.faint}>{p.hint!}</Small>
+        <Text variant="small" color="faint">{p.hint!}</Text>
       </Show>
     </Row>
   );
@@ -181,9 +179,9 @@ export function App(
   );
 
   const TitleBar = () => (
-    <Row dragRegion height={44} align="center" gap={6} padding={[0, 8, 0, 12]} background={() => colors.titlebar}>
-      <Box width={24} height={24} radius={7} align="center" justify="center" background={() => colors.today}>
-        <Icon svg={sun} size={15} strokeWidth={2.25} color={() => colors.todayText} />
+    <Row dragRegion height={44} align="center" gap={6} padding={[0, 8, 0, 12]} background="titlebar">
+      <Box width={24} height={24} radius={7} align="center" justify="center" background="today">
+        <Icon svg={sun} size={15} strokeWidth={2.25} color="todayText" />
       </Box>
       <Text bold fontSize={15} padding={[0, 6, 0, 2]}>Dia</Text>
       <IconButton icon={arrowLeft} tip="Voltar (Alt+←)" onClick={ws.goBack} size={16} />
@@ -197,16 +195,16 @@ export function App(
         padding={[0, 10]}
         radius={8}
         cursor="pointer"
-        background={() => colors.page}
+        background="page"
         borderWidth={1}
-        borderColor={() => colors.border}
-        hoverStyle={{ borderColor: () => theme.accent.base }}
-        color={() => theme.text.secondary}
+        borderColor="border"
+        hoverStyle={{ borderColor: "accent.base" }}
+        color="text.secondary"
         onClick={() => ui.setSwitcher(true)}
       >
         <Icon svg={searchIcon} size={15} />
         <Text grow={1} fontSize={13}>Buscar ou abrir uma nota</Text>
-        <Small color={() => colors.faint}>Ctrl K</Small>
+        <Text variant="small" color="faint">Ctrl K</Text>
       </Row>
       <Box grow={1} />
       <Show when={() => ui.view() === "editor"}>
@@ -223,7 +221,7 @@ export function App(
   );
 
   const Sidebar = () => (
-    <Column width={SIDEBAR_WIDTH} background={() => colors.sidebar}>
+    <Column width={SIDEBAR_WIDTH} background="sidebar">
       <Column padding={[10, 8, 6, 8]} gap={1}>
         <NavItem icon={house} label="Hoje" view="home" />
         <NavItem icon={calendarDays} label="Calendário" view="calendar" />
@@ -235,24 +233,24 @@ export function App(
           padding={[7, 10]}
           radius={6}
           cursor="pointer"
-          hoverStyle={{ background: () => colors.hover }}
-          color={() => theme.text.secondary}
+          hoverStyle={{ background: "hover" }}
+          color="text.secondary"
           onClick={openToday}
         >
           <Icon svg={notebookPen} size={17} strokeWidth={1.75} />
           <Text grow={1}>Nota de hoje</Text>
-          <Small color={() => colors.faint}>Ctrl D</Small>
+          <Text variant="small" color="faint">Ctrl D</Text>
         </Row>
       </Column>
       <Line />
       <Row padding={[6, 8, 0, 14]} align="center" gap={2}>
-        <Small grow={1} bold letterSpacing={1}>
+        <Text variant="small" grow={1} bold letterSpacing={1}>
           {() => ({ files: "NOTAS", search: "BUSCAR", tags: "TAGS" })[ui.leftTab()]}
-        </Small>
+        </Text>
         <Show when={() => ui.leftTab() === "files"}>
           <IconButton icon={filePlus} tip="Nova nota (Ctrl+N)" onClick={newNote} size={15} />
           <IconButton icon={folderPlus} tip="Nova pasta" onClick={() => ui.setNewFolder(true)} size={15} />
-          <Box width={1} height={16} margin={[0, 4]} background={() => colors.border} />
+          <Box width={1} height={16} margin={[0, 4]} background="border" />
         </Show>
         <TabButton icon={filesIcon} tab="files" tip="Notas" />
         <TabButton icon={searchIcon} tab="search" tip="Buscar (Ctrl+Shift+F)" />
@@ -274,7 +272,7 @@ export function App(
 
   const EditorPane = (): Child => (
     <Row grow={1}>
-      <Column grow={1} width={0} background={() => colors.page}>
+      <Column grow={1} width={0} background="page">
         <Show
           when={ws.active}
           fallback={
@@ -298,16 +296,16 @@ export function App(
             api={ui.setEditor}
             header={
               <Column gap={4} padding={[4, 0, 16, 0]}>
-                <Caption>
+                <Text variant="caption">
                   {() => (ws.active() && folderOf(ws.active()!) ? folderOf(ws.active()!).replace(/\//g, " / ") : " ")}
-                </Caption>
+                </Text>
                 <Text fontSize={32} fontWeight={800} cursor="text" onClick={() => ws.active() && ui.setRenaming(ws.active())}>
                   {() => (ws.active() ? noteName(ws.active()!) : "")}
                 </Text>
               </Column>
             }
           />
-          <Row padding={[4, 14]} gap={16} justify="end" fontSize={12} color={() => theme.text.secondary}>
+          <Row padding={[4, 14]} gap={16} justify="end" fontSize={12} color="text.secondary">
             <Text>{() => `${ws.backlinks(ws.active() ?? "").length} backlinks`}</Text>
             <Text>{() => `${countWords(text())} palavras`}</Text>
             <Text>{() => `${text().length} caracteres`}</Text>
@@ -316,7 +314,7 @@ export function App(
       </Column>
       <Show when={ui.rightOpen}>
         <Line vertical />
-        <Column width={SIDEBAR_WIDTH + 12} background={() => colors.sidebar}>
+        <Column width={SIDEBAR_WIDTH + 12} background="sidebar">
           <RightPanel />
         </Column>
       </Show>
@@ -374,9 +372,9 @@ export function App(
           }
         >
           <TextField value={name} onInput={(v) => (setName(v), setError(""))} onSubmit={confirmRename} />
-          <Caption color={() => (error() ? theme.danger.base : theme.text.secondary)}>
+          <Text variant="caption" color={() => (error() ? "danger.base" : "text.secondary")}>
             {() => error() || "Os links para esta nota serão atualizados."}
-          </Caption>
+          </Text>
         </Dialog>
 
         <Dialog

@@ -1,8 +1,7 @@
 // A clickable row of a side panel list (file, search hit, backlink, heading).
 
-import { type Child, Icon, Row, Tooltip, theme } from "@nodebuilderjs/core";
+import { type Child, Icon, Row, Tooltip } from "@nodebuilderjs/core";
 import type { ElementRef, PointerEvent } from "@nodebuilderjs/core";
-import { colors } from "../theme.js";
 
 export function Item(props: {
   onClick: () => void;
@@ -20,9 +19,9 @@ export function Item(props: {
       radius={4}
       padding={[4, 8, 4, 8 + (props.indent ?? 0)]}
       cursor="pointer"
-      background={() => (props.active?.() ? colors.active : "transparent")}
-      hoverStyle={{ background: () => (props.active?.() ? colors.active : colors.hover) }}
-      color={() => (props.active?.() ? theme.text.primary : theme.text.secondary)}
+      background={() => (props.active?.() ? "active" : "transparent")}
+      hoverStyle={{ background: () => (props.active?.() ? "active" : "hover") }}
+      color={() => (props.active?.() ? "text.primary" : "text.secondary")}
       onContextMenu={props.onContextMenu}
       onClick={props.onClick}
     >
@@ -39,8 +38,8 @@ export function IconButton(props: { icon: string | (() => string); tip: string; 
         padding={6}
         radius={6}
         cursor="pointer"
-        color={() => (props.active?.() ? theme.accent.base : theme.text.secondary)}
-        hoverStyle={{ background: () => colors.hover, color: () => (props.active?.() ? theme.accent.base : theme.text.primary) }}
+        color={() => (props.active?.() ? "accent.base" : "text.secondary")}
+        hoverStyle={{ background: "hover", color: () => (props.active?.() ? "accent.base" : "text.primary") }}
         onClick={props.onClick}
       >
         <Icon svg={props.icon} size={props.size ?? 18} strokeWidth={1.75} />

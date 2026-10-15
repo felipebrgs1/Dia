@@ -1,14 +1,13 @@
 // Right sidebar: backlinks, outgoing links and the outline of the open note.
 
-import { Column, For, Icon, Match, Row, Scroll, Switch, Text, createMemo, theme } from "@nodebuilderjs/core";
+import { Column, For, Icon, Match, Row, Scroll, Switch, Text, createMemo } from "@nodebuilderjs/core";
 import { fileText, link as linkIcon, listTree } from "../icons.js";
 import { useUi, useWorkspace } from "../context.js";
 import { noteName, plainText } from "../vault/markdown.js";
 import { IconButton, Item } from "./Item.js";
-import { Muted } from "./Text.js";
 
 function Empty(props: { text: string }) {
-  return <Muted fontSize={13} padding={8}>{props.text}</Muted>;
+  return <Text variant="muted" fontSize={13} padding={8}>{props.text}</Text>;
 }
 
 export function RightPanel() {
@@ -48,7 +47,7 @@ export function RightPanel() {
               {(b) => (
                 <Item onClick={() => go(b.path, b.offset)}>
                   <Column gap={2} grow={1}>
-                    <Text bold maxLines={1} color={() => theme.text.primary}>{noteName(b.path)}</Text>
+                    <Text bold maxLines={1} color="text.primary">{noteName(b.path)}</Text>
                     <Text fontSize={12} maxLines={2}>{plainText(b.line.replace(/^\s*[-*+] (\[.\] )?/, ""))}</Text>
                   </Column>
                 </Item>
@@ -61,7 +60,7 @@ export function RightPanel() {
               {({ link, to }) => (
                 <Item onClick={() => (ui.setView("editor"), ws.openLink(link.target))}>
                   <Icon svg={fileText} size={14} />
-                  <Text maxLines={1} grow={1} color={() => (to ? theme.text.primary : theme.text.secondary)}>
+                  <Text maxLines={1} grow={1} color={() => (to ? "text.primary" : "text.secondary")}>
                     {to ? noteName(to) : `${link.target} (não criada)`}
                   </Text>
                 </Item>

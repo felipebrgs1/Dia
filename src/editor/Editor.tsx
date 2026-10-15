@@ -370,7 +370,7 @@ export function Editor(props: {
   return (
     <Scroll
       grow={1}
-      background={() => colors.page}
+      background="page"
       ref={(el) => (scroller = el)}
       onResize={(s) => (setViewWidth(s.width), setViewHeight(s.height))}
     >
@@ -397,7 +397,7 @@ export function Editor(props: {
             top={() => caret().y + 3}
             width={2}
             height={() => caret().height - 6}
-            background={() => (focused() && blink() ? theme.accent.base : "transparent")}
+            background={() => (focused() && blink() ? "accent.base" : "transparent")}
           />
         </Box>
       </Column>

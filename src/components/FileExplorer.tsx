@@ -1,9 +1,8 @@
 // The vault's folders and notes as a tree, with a context menu (right click).
 
-import { Card, Column, For, Icon, Overlay, Row, Scroll, Show, Text, createEffect, createMemo, createSignal, theme, untrack } from "@nodebuilderjs/core";
+import { Card, Column, For, Icon, Overlay, Scroll, Show, Text, createEffect, createMemo, createSignal, untrack } from "@nodebuilderjs/core";
 import { chevronDown, chevronRight, filePlus, pencil, trash2 as trash } from "../icons.js";
 import { useUi, useWorkspace } from "../context.js";
-import { colors } from "../theme.js";
 import { noteName } from "../vault/markdown.js";
 import { Item } from "./Item.js";
 
@@ -99,8 +98,8 @@ export function FileExplorer() {
         p.onClick();
       }}
     >
-      <Icon svg={p.icon} size={16} color={() => (p.danger ? theme.danger.base : theme.text.secondary)} />
-      <Text color={() => (p.danger ? theme.danger.base : theme.text.primary)}>{p.label}</Text>
+      <Icon svg={p.icon} size={16} color={() => (p.danger ? "danger.base" : "text.secondary")} />
+      <Text color={() => (p.danger ? "danger.base" : "text.primary")}>{p.label}</Text>
     </Item>
   );
 
@@ -112,7 +111,7 @@ export function FileExplorer() {
       <Show when={menu}>
         {(m) => (
           <Overlay at={{ x: m().x, y: m().y }} onDismiss={() => setMenu(null)}>
-            <Card padding={4} gap={0} width={190} background={() => colors.sidebar} shadow={() => ({ color: colors.shadowMenu, blur: 16, y: 4 })}>
+            <Card padding={4} gap={0} width={190} background="sidebar" shadow={{ color: "shadowMenu", blur: 16, y: 4 }}>
               <Show
                 when={() => m().node.folder}
                 fallback={

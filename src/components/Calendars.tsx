@@ -2,17 +2,15 @@
 // the details of an external event, and the agenda row shared by the home screen and the
 // calendar's day panel.
 
-import { Box, Button, Column, Dialog, For, Icon, Row, Show, Text, TextField, Toggle, colorScheme, createSignal, theme } from "@nodebuilderjs/core";
+import { Box, Button, Column, Dialog, For, Icon, Row, Show, Text, TextField, Toggle, colorScheme, createSignal } from "@nodebuilderjs/core";
 import type { ExternalEvent } from "../calendars/ics.js";
 import { CALENDAR_COLORS } from "../calendars/store.js";
 import { useCalendars, useUi, useWorkspace } from "../context.js";
 import { longDate } from "../dates.js";
 import { mapPin, refreshCw, trash2 } from "../icons.js";
-import { colors } from "../theme.js";
 import { formatTime } from "../vault/events.js";
 import type { VaultEvent } from "../workspace.js";
 import { IconButton } from "./Item.js";
-import { Caption, Muted } from "./Text.js";
 
 /** Translucent version of a calendar color, for event backgrounds. */
 export const tint = (color: string) => `${color}${colorScheme() === "dark" ? "4d" : "3d"}`;
@@ -38,7 +36,7 @@ function Swatches(props: { value: () => string; onChange: (c: string) => void })
             cursor="pointer"
             background={c}
             borderWidth={() => (props.value() === c ? 2 : 0)}
-            borderColor={() => theme.text.primary}
+            borderColor="text.primary"
             onClick={() => props.onChange(c)}
           />
         )}
@@ -71,26 +69,26 @@ export function CalendarsDialog() {
       width={560}
       actions={<Button label="Fechar" variant="primary" onClick={() => ui.setCalendarsOpen(false)} />}
     >
-      <Muted fontSize={13}>
+      <Text variant="muted" fontSize={13}>
         Só leitura: os eventos aparecem no Dia, mas nada é enviado de volta. Atualiza a cada 15 minutos.
-      </Muted>
+      </Text>
       <Column gap={6}>
-        <For each={cals.sources} fallback={<Text fontSize={13} color={() => colors.faint}>Nenhum calendário ainda.</Text>}>
+        <For each={cals.sources} fallback={<Text fontSize={13} color="faint">Nenhum calendário ainda.</Text>}>
           {(s) => {
             const st = () => cals.status(s.id);
             return (
-              <Row gap={10} align="center" padding={[8, 10]} radius={8} background={() => colors.sidebar}>
+              <Row gap={10} align="center" padding={[8, 10]} radius={8} background="sidebar">
                 <Box width={12} height={12} radius={6} background={s.color} />
                 <Column grow={1} width={0} gap={2}>
                   <Text bold maxLines={1}>{s.name}</Text>
-                  <Caption maxLines={1} color={() => (st().state === "error" ? theme.danger.base : theme.text.secondary)}>
+                  <Text variant="caption" maxLines={1} color={() => (st().state === "error" ? "danger.base" : "text.secondary")}>
                     {() => {
                       const v = st();
                       if (v.state === "loading") return "Atualizando…";
                       if (v.state === "error") return `Erro: ${v.error}`;
                       return `${v.events} eventos · ${ago(v.syncedAt)}`;
                     }}
-                  </Caption>
+                  </Text>
                 </Column>
                 <Toggle ariaLabel={`Mostrar ${s.name}`} checked={() => s.enabled} onChange={(on) => cals.update(s.id, { enabled: on })} />
                 <IconButton icon={refreshCw} tip="Atualizar agora" onClick={() => void cals.refresh(s.id)} size={15} />
@@ -100,7 +98,7 @@ export function CalendarsDialog() {
           }}
         </For>
       </Column>
-      <Box height={1} background={() => colors.border} />
+      <Box height={1} background="border" />
       <Text bold>Adicionar calendário</Text>
       <TextField value={name} onInput={setName} placeholder="Nome (ex.: Trabalho)" />
       <TextField value={url} onInput={(v) => (setUrl(v), setError(""))} onSubmit={add} placeholder="Link iCal (.ics)" />
@@ -110,12 +108,12 @@ export function CalendarsDialog() {
         <Button label="Adicionar" variant="primary" disabled={() => !url().trim()} onClick={add} />
       </Row>
       <Show when={error}>
-        <Text fontSize={12} color={() => theme.danger.base}>{error}</Text>
+        <Text fontSize={12} color="danger.base">{error}</Text>
       </Show>
-      <Caption>
+      <Text variant="caption">
         Google Agenda: Configurações → escolha o calendário → "Integrar agenda" → "Endereço secreto no formato iCal".
         Outlook: Configurações → Calendário → Calendários compartilhados → Publicar → link ICS.
-      </Caption>
+      </Text>
     </Dialog>
   );
 }
@@ -157,18 +155,18 @@ export function ExternalEventDialog() {
       }
     >
       <Row gap={8} align="center">
-        <Box width={10} height={10} radius={5} background={() => cals.source(ev()?.calendarId ?? "")?.color ?? colors.faint} />
-        <Muted fontSize={13}>{() => cals.source(ev()?.calendarId ?? "")?.name ?? ""}</Muted>
+        <Box width={10} height={10} radius={5} background={() => cals.source(ev()?.calendarId ?? "")?.color ?? "faint"} />
+        <Text variant="muted" fontSize={13}>{() => cals.source(ev()?.calendarId ?? "")?.name ?? ""}</Text>
       </Row>
       <Text>{when}</Text>
       <Show when={() => ev()?.location}>
         <Row gap={6} align="center" fontSize={13}>
-          <Icon svg={mapPin} size={14} color={() => theme.text.secondary} />
+          <Icon svg={mapPin} size={14} color="text.secondary" />
           <Text grow={1} selectable>{() => ev()?.location ?? ""}</Text>
         </Row>
       </Show>
       <Show when={() => ev()?.description}>
-        <Muted fontSize={13} maxLines={8} selectable>{() => ev()?.description ?? ""}</Muted>
+        <Text variant="muted" fontSize={13} maxLines={8} selectable>{() => ev()?.description ?? ""}</Text>
       </Show>
     </Dialog>
   );
@@ -190,15 +188,15 @@ export function AgendaRow(props: {
       padding={[6, 8]}
       radius={6}
       cursor="pointer"
-      background={() => (props.color ? tint(props.color) : colors.event)}
+      background={() => (props.color ? tint(props.color) : "event")}
       opacity={() => (props.faded?.() ? 0.55 : 1)}
       hoverStyle={{ opacity: 0.85 }}
       onClick={props.onClick}
     >
-      <Box width={3} radius={2} background={() => props.color ?? colors.eventBar} />
+      <Box width={3} radius={2} background={() => props.color ?? "eventBar"} />
       <Column grow={1} gap={1}>
         <Text bold maxLines={2}>{props.title}</Text>
-        <Caption>{props.allDay ? "Dia inteiro" : `${formatTime(props.start)} – ${formatTime(props.end)}`}</Caption>
+        <Text variant="caption">{props.allDay ? "Dia inteiro" : `${formatTime(props.start)} – ${formatTime(props.end)}`}</Text>
       </Column>
     </Row>
   );

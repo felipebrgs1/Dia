@@ -1,9 +1,13 @@
-// Dia's colors: warm paper and amber, light first, with a warm dark mode. Read them inside
-// functions (`background={() => colors.sidebar}`): each getter follows setTheme().
+// Dia's colors: warm paper and amber, light first, with a warm dark mode. Components use them
+// by name (`background="sidebar"`, `color="text.secondary"`), resolved when painting so they
+// follow setTheme(); code that needs the value (Canvas drawing) reads `colors.sidebar`.
 
-import { createThemeTokens, darkTheme, lightTheme, setTheme, theme } from "@nodebuilderjs/core";
+import { createThemeTokens, darkTheme, defineTextVariants, lightTheme, setTheme, theme } from "@nodebuilderjs/core";
 import type { Role } from "./editor/layout.js";
 
+// Accents (link, today, event bar, now) are oklch: past sRGB on Display P3 screens, clipped to
+// sRGB elsewhere. They were #a3620a, #e8a317, #d99a06 and #d9480f (dark: #f2c14e, #f2b632,
+// #f2b632, #ff7a45), with chroma pushed 60% of the way to the P3 edge.
 const light = {
   /** The page: notes, home, calendar. */
   page: "#fffdf6",
@@ -16,18 +20,18 @@ const light = {
   faint: "#b5aa8c",
   codeBg: "#f5eedc",
   highlight: "#ffd95c99",
-  link: "#a3620a",
-  tag: "#a3620a",
+  link: "oklch(55.7% 0.134 65.2)",
+  tag: "link",
   tagBg: "#f2c14e33",
   code: "#a24d1f",
-  today: "#e8a317",
+  today: "oklch(76.3% 0.172 77.3)",
   todayText: "#2b1d00",
   weekend: "#f6efdd",
   event: "#f6d88a",
-  eventBar: "#d99a06",
+  eventBar: "oklch(72.9% 0.164 79.1)",
   eventDone: "#efe6cf",
   todayColumn: "#fff4d6",
-  now: "#d9480f",
+  now: "oklch(60% 0.209 37.9)",
   graphNode: "#b3a37c",
   graphEdge: "#5a461426",
   /** Status dot of the "Feito" board column. */
@@ -55,18 +59,18 @@ const dark: typeof light = {
   faint: "#7d735d",
   codeBg: "#2c2820",
   highlight: "#f2b63259",
-  link: "#f2c14e",
-  tag: "#f2c14e",
+  link: "oklch(83.4% 0.175 85.4)",
+  tag: "link",
   tagBg: "#f2b63226",
   code: "#e8a66f",
-  today: "#f2b632",
+  today: "oklch(81.1% 0.177 82.1)",
   todayText: "#1f1c16",
   weekend: "#232019",
   event: "#5a4515",
-  eventBar: "#f2b632",
+  eventBar: "oklch(81.1% 0.177 82.1)",
   eventDone: "#2f2a20",
   todayColumn: "#272216",
-  now: "#ff7a45",
+  now: "oklch(72.7% 0.204 41.2)",
   graphNode: "#8f8670",
   graphEdge: "#fff3d626",
   done: "#6cc070",
@@ -81,6 +85,10 @@ const dark: typeof light = {
 };
 
 export const colors = createThemeTokens({ light, dark });
+
+// `<Text variant="muted">` (secondary, same size) and `"caption"` (12 px) come with nodebuilder;
+// `"small"` is for hints and labels inside chips.
+defineTextVariants({ small: { fontSize: 11, color: "text.secondary" } });
 
 /** Text color of a role from the editor layout. */
 export function roleColor(role: Role): string {

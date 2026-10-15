@@ -69,7 +69,11 @@ above: `nodebuilder agents update` replaces only the framework guide between the
 
 - App state comes from context (`src/context.ts`): `useWorkspace()`, `useUi()`, `useCalendars()`
   in the component body, provided once in `App.tsx`. Don't pass `ws`/`ui`/`cals` as props.
-- Secondary text: `<Muted>` (same size), `<Caption>` (12 px), `<Small>` (11 px) from
-  `src/components/Text.tsx`; or set `color`/`fontSize` once on the container (they inherit).
-- Every color lives in `src/theme.ts` (`colors.*`, light and dark), shadows included; write
-  `"transparent"`, not `"#00000000"`. Hover is `hoverStyle`, never a signal + pointer events.
+- Colors by name, never `() => colors.x` / `() => theme.x` in JSX: `background="sidebar"`,
+  `color="text.secondary"`, conditionals as `color={() => (on() ? "accent.base" : "faint")}`.
+  App tokens (light and dark, shadows included) live in `src/theme.ts`; code that needs the
+  value itself (Canvas drawing, string concatenation like `tint()`) reads `colors.x`. Accents are
+  `oklch()` for Display P3. Write `"transparent"`, not `"#00000000"`.
+- Secondary text: `<Text variant="muted">` (same size), `"caption"` (12 px) or `"small"` (11 px,
+  defined in `theme.ts`); or set `color`/`fontSize` once on the container (they inherit).
+- Hover is `hoverStyle`, never a signal + pointer events.

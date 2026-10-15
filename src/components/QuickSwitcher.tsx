@@ -1,12 +1,10 @@
 // Ctrl+O: type part of a name, arrows to choose, Enter opens (or creates the note).
 
-import { Card, Column, For, Overlay, Row, Scroll, Show, Text, TextField, createMemo, createSignal, theme } from "@nodebuilderjs/core";
+import { Card, Column, For, Overlay, Row, Scroll, Show, Text, TextField, createMemo, createSignal } from "@nodebuilderjs/core";
 import type { ElementRef } from "@nodebuilderjs/core";
 import { useUi, useWorkspace } from "../context.js";
-import { colors } from "../theme.js";
 import { folderOf, noteName } from "../vault/markdown.js";
 import { fuzzyScore } from "../workspace.js";
-import { Caption, Muted } from "./Text.js";
 
 export function QuickSwitcher() {
   const ws = useWorkspace();
@@ -45,8 +43,8 @@ export function QuickSwitcher() {
   };
 
   return (
-    <Overlay modal background={() => theme.backdrop} align="center" padding={[90, 16, 16, 16]} onDismiss={close}>
-      <Card width={560} padding={8} gap={6} background={() => colors.sidebar} shadow={() => ({ color: colors.shadowModal, blur: 30, y: 10 })}>
+    <Overlay modal background="backdrop" align="center" padding={[90, 16, 16, 16]} onDismiss={close}>
+      <Card width={560} padding={8} gap={6} background="sidebar" shadow={{ color: "shadowModal", blur: 30, y: 10 }}>
         <Column
           onKeyDown={(e) => {
             if (e.key === "Down" || (e.ctrl && e.key === "n")) move(1);
@@ -74,22 +72,22 @@ export function QuickSwitcher() {
                 gap={8}
                 align="center"
                 cursor="pointer"
-                background={() => (selected() === i() ? colors.active : "transparent")}
+                background={() => (selected() === i() ? "active" : "transparent")}
                 onPointerEnter={() => setSelected(i())}
                 onClick={() => choose(i())}
               >
                 <Text maxLines={1} grow={1}>{noteName(r.path)}</Text>
-                <Caption maxLines={1}>{folderOf(r.path)}</Caption>
+                <Text variant="caption" maxLines={1}>{folderOf(r.path)}</Text>
               </Row>
             )}
           </For>
           <Show when={() => !results().length && query().trim()}>
             <Row padding={[6, 10]}>
-              <Muted>{() => `Enter para criar "${query().trim()}"`}</Muted>
+              <Text variant="muted">{() => `Enter para criar "${query().trim()}"`}</Text>
             </Row>
           </Show>
         </Scroll>
-        <Row gap={16} padding={[2, 10]} fontSize={12} color={() => theme.text.secondary}>
+        <Row gap={16} padding={[2, 10]} fontSize={12} color="text.secondary">
           <Text>↑↓ navegar</Text>
           <Text>↵ abrir</Text>
           <Text>esc fechar</Text>

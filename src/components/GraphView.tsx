@@ -7,7 +7,6 @@ import { type SimNode, type Simulation, createSimulation, physics, running, tick
 import { useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
 import { noteName } from "../vault/markdown.js";
-import { Caption } from "./Text.js";
 
 type GNode = SimNode & { path: string };
 
@@ -112,12 +111,12 @@ export function GraphView() {
   };
 
   return (
-    <Column grow={1} background={() => colors.page}>
+    <Column grow={1} background="page">
       <Row padding={[10, 16]} gap={12} align="center">
         <Text bold>Visão de grafo</Text>
-        <Caption>
+        <Text variant="caption">
           {() => `${sim().nodes.length} notas · ${sim().edges.length} links — arraste as notas, arraste o fundo para mover, roda para zoom`}
-        </Caption>
+        </Text>
       </Row>
       <Canvas
         grow={1}
