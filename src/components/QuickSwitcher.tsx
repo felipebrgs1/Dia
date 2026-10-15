@@ -2,13 +2,15 @@
 
 import { Card, Column, For, Overlay, Row, Scroll, Show, Text, TextField, createMemo, createSignal, theme } from "@nodebuilderjs/core";
 import type { ElementRef } from "@nodebuilderjs/core";
-import type { Ui } from "../ui.js";
-import { folderOf, noteName } from "../vault/markdown.js";
-import { type Workspace, fuzzyScore } from "../workspace.js";
+import { useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
+import { folderOf, noteName } from "../vault/markdown.js";
+import { fuzzyScore } from "../workspace.js";
+import { Caption, Muted } from "./Text.js";
 
-export function QuickSwitcher(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
+export function QuickSwitcher() {
+  const ws = useWorkspace();
+  const ui = useUi();
   const [query, setQuery] = createSignal("");
   const [selected, setSelected] = createSignal(0);
   const rows: ElementRef[] = [];
@@ -44,7 +46,7 @@ export function QuickSwitcher(props: { ws: Workspace; ui: Ui }) {
 
   return (
     <Overlay modal background={() => theme.backdrop} align="center" padding={[90, 16, 16, 16]} onDismiss={close}>
-      <Card width={560} padding={8} gap={6} background={() => colors.sidebar} shadow={{ color: "#00000060", blur: 30, y: 10 }}>
+      <Card width={560} padding={8} gap={6} background={() => colors.sidebar} shadow={() => ({ color: colors.shadowModal, blur: 30, y: 10 })}>
         <Column
           onKeyDown={(e) => {
             if (e.key === "Down" || (e.ctrl && e.key === "n")) move(1);
@@ -72,25 +74,25 @@ export function QuickSwitcher(props: { ws: Workspace; ui: Ui }) {
                 gap={8}
                 align="center"
                 cursor="pointer"
-                background={() => (selected() === i() ? colors.active : "#00000000")}
+                background={() => (selected() === i() ? colors.active : "transparent")}
                 onPointerEnter={() => setSelected(i())}
                 onClick={() => choose(i())}
               >
                 <Text maxLines={1} grow={1}>{noteName(r.path)}</Text>
-                <Text maxLines={1} fontSize={12} color={() => theme.text.secondary}>{folderOf(r.path)}</Text>
+                <Caption maxLines={1}>{folderOf(r.path)}</Caption>
               </Row>
             )}
           </For>
           <Show when={() => !results().length && query().trim()}>
             <Row padding={[6, 10]}>
-              <Text color={() => theme.text.secondary}>{() => `Enter para criar "${query().trim()}"`}</Text>
+              <Muted>{() => `Enter para criar "${query().trim()}"`}</Muted>
             </Row>
           </Show>
         </Scroll>
-        <Row gap={16} padding={[2, 10]}>
-          <Text fontSize={12} color={() => theme.text.secondary}>↑↓ navegar</Text>
-          <Text fontSize={12} color={() => theme.text.secondary}>↵ abrir</Text>
-          <Text fontSize={12} color={() => theme.text.secondary}>esc fechar</Text>
+        <Row gap={16} padding={[2, 10]} fontSize={12} color={() => theme.text.secondary}>
+          <Text>↑↓ navegar</Text>
+          <Text>↵ abrir</Text>
+          <Text>esc fechar</Text>
         </Row>
       </Card>
     </Overlay>

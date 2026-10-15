@@ -22,15 +22,16 @@ import {
 } from "@nodebuilderjs/core";
 import { noteLabel, shortDate, today } from "../dates.js";
 import { fileText, search as searchIcon } from "../icons.js";
+import { useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
 import type { TaskStatus } from "../vault/markdown.js";
-import type { VaultTask, Workspace } from "../workspace.js";
+import type { VaultTask } from "../workspace.js";
+import { Caption, Muted } from "./Text.js";
 
 const COLUMNS: { status: TaskStatus; title: string; dot: () => string }[] = [
   { status: "todo", title: "A fazer", dot: () => theme.text.secondary },
   { status: "doing", title: "Fazendo", dot: () => theme.accent.base },
-  { status: "done", title: "Feito", dot: () => "#3f9142" },
+  { status: "done", title: "Feito", dot: () => colors.done },
 ];
 /** "Feito" can grow forever: it shows the most recent part of it. */
 const DONE_LIMIT = 30;
@@ -58,16 +59,16 @@ function TaskCard(props: { task: VaultTask; dimmed?: () => boolean; floating?: b
       radius={8}
       background={() => colors.card}
       borderColor={() => (props.floating ? theme.accent.base : colors.border)}
-      shadow={props.floating ? { color: "#5a461440", blur: 18, y: 6 } : { color: "#5a46140f", blur: 4, y: 1 }}
+      shadow={() => (props.floating ? { color: colors.shadowLifted, blur: 18, y: 6 } : { color: colors.shadowCard, blur: 4, y: 1 })}
       opacity={() => (props.dimmed?.() ? 0.35 : 1)}
       hoverStyle={props.floating ? undefined : { borderColor: () => theme.accent.base }}
     >
       <Text maxLines={4} color={() => (t.status === "done" ? theme.text.secondary : theme.text.primary)}>{t.text || "(sem texto)"}</Text>
-      <Row gap={6} align="center">
-        <Icon svg={fileText} size={13} color={() => theme.text.secondary} />
-        <Text grow={1} fontSize={12} maxLines={1} color={() => theme.text.secondary}>{noteLabel(t.path)}</Text>
+      <Row gap={6} align="center" color={() => theme.text.secondary}>
+        <Icon svg={fileText} size={13} />
+        <Caption grow={1} maxLines={1}>{noteLabel(t.path)}</Caption>
         <Show when={() => t.due}>
-          <Row padding={[1, 7]} radius={9} background={() => (overdue ? "#e01b2422" : colors.tagBg)}>
+          <Row padding={[1, 7]} radius={9} background={() => (overdue ? colors.overdueBg : colors.tagBg)}>
             <Text fontSize={11} color={() => (overdue ? theme.danger.base : colors.link)}>{() => shortDate(t.due!)}</Text>
           </Row>
         </Show>
@@ -76,8 +77,9 @@ function TaskCard(props: { task: VaultTask; dimmed?: () => boolean; floating?: b
   );
 }
 
-export function BoardView(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
+export function BoardView() {
+  const ws = useWorkspace();
+  const ui = useUi();
   const [filter, setFilter] = createSignal("");
   const [draft, setDraft] = createSignal("");
   const [drag, setDrag] = createSignal<Drag | null>(null);
@@ -135,9 +137,7 @@ export function BoardView(props: { ws: Workspace; ui: Ui }) {
       <Row align="center" gap={12} padding={[16, 24, 12, 24]}>
         <Column grow={1} gap={2}>
           <Text fontSize={22} bold>Quadro</Text>
-          <Text fontSize={12} color={() => theme.text.secondary}>
-            Tarefas de todas as notas. Arraste um cartão para mudar o status; clique para abrir a nota.
-          </Text>
+          <Caption>Tarefas de todas as notas. Arraste um cartão para mudar o status; clique para abrir a nota.</Caption>
         </Column>
         <Row width={260} gap={6} align="center">
           <Icon svg={searchIcon} size={15} color={() => theme.text.secondary} />
@@ -163,13 +163,13 @@ export function BoardView(props: { ws: Workspace; ui: Ui }) {
                 radius={12}
                 background={() => (target() ? colors.active : colors.sidebar)}
                 borderWidth={1.5}
-                borderColor={() => (target() ? theme.accent.base : "#00000000")}
+                borderColor={() => (target() ? theme.accent.base : "transparent")}
               >
                 <Row gap={8} align="center" padding={[2, 4]}>
                   <Box width={8} height={8} radius={4} background={col.dot} />
                   <Text bold grow={1}>{col.title}</Text>
                   <Row padding={[1, 8]} radius={10} background={() => colors.hover}>
-                    <Text fontSize={12} color={() => theme.text.secondary}>{() => String(tasks().length)}</Text>
+                    <Caption>{() => String(tasks().length)}</Caption>
                   </Row>
                 </Row>
                 <Show when={col.status === "todo"}>
@@ -179,9 +179,9 @@ export function BoardView(props: { ws: Workspace; ui: Ui }) {
                   <For
                     each={shown}
                     fallback={
-                      <Text fontSize={13} padding={[8, 4]} color={() => theme.text.secondary}>
+                      <Muted fontSize={13} padding={[8, 4]}>
                         {col.status === "doing" ? "Arraste uma tarefa para cá ao começar." : "Nada aqui."}
-                      </Text>
+                      </Muted>
                     }
                   >
                     {(t) => (
@@ -205,9 +205,7 @@ export function BoardView(props: { ws: Workspace; ui: Ui }) {
                     )}
                   </For>
                   <Show when={() => col.status === "done" && tasks().length > DONE_LIMIT}>
-                    <Text fontSize={12} padding={[4, 4]} color={() => theme.text.secondary}>
-                      {() => `+${tasks().length - DONE_LIMIT} tarefas feitas mais antigas`}
-                    </Text>
+                    <Caption padding={[4, 4]}>{() => `+${tasks().length - DONE_LIMIT} tarefas feitas mais antigas`}</Caption>
                   </Show>
                 </Scroll>
               </Column>

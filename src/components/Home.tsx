@@ -4,32 +4,43 @@
 import { Box, Button, Card, type Child, Column, For, Icon, Row, Scroll, Show, Text, createMemo, theme } from "@nodebuilderjs/core";
 import { greeting, longDate, noteLabel, shortDate, today } from "../dates.js";
 import { calendarDays, clock, fileText, listTodo, notebookPen } from "../icons.js";
+import { useCalendars, useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
 import { folderOf, plainText } from "../vault/markdown.js";
-import type { VaultTask, Workspace } from "../workspace.js";
-import type { Calendars } from "../calendars/store.js";
+import type { VaultTask } from "../workspace.js";
 import { MonthGrid, MonthHeader, dayIndex } from "./Calendar.js";
 import { AgendaRow, agendaOf } from "./Calendars.js";
 import { TaskRow } from "./Tasks.js";
+import { Caption, Muted } from "./Text.js";
 
-function Section(props: { icon: string; title: string; extra?: () => string; children?: Child }) {
+/** A card of the home screen, on the warm card color with a soft shadow. */
+function HomeCard(props: { children?: Child }) {
   return (
-    <Card gap={10} padding={18} background={() => colors.card} borderColor={() => colors.border} shadow={{ color: "#5a46140d", blur: 12, y: 2 }}>
-      <Row gap={8} align="center">
-        <Icon svg={props.icon} size={16} color={() => theme.accent.base} />
-        <Text bold grow={1}>{props.title}</Text>
-        <Show when={() => props.extra?.()}>
-          <Text fontSize={12} color={() => theme.text.secondary}>{() => props.extra!()}</Text>
-        </Show>
-      </Row>
+    <Card gap={10} padding={18} background={() => colors.card} borderColor={() => colors.border} shadow={() => ({ color: colors.shadowSoft, blur: 12, y: 2 })}>
       {props.children}
     </Card>
   );
 }
 
-export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
-  const { ws, ui, cals } = props;
+function Section(props: { icon: string; title: string; extra?: () => string; children?: Child }) {
+  return (
+    <HomeCard>
+      <Row gap={8} align="center">
+        <Icon svg={props.icon} size={16} color={() => theme.accent.base} />
+        <Text bold grow={1}>{props.title}</Text>
+        <Show when={() => props.extra?.()}>
+          <Caption>{() => props.extra!()}</Caption>
+        </Show>
+      </Row>
+      {props.children}
+    </HomeCard>
+  );
+}
+
+export function Home() {
+  const ws = useWorkspace();
+  const ui = useUi();
+  const cals = useCalendars();
   const days = dayIndex(ws, cals);
   const day = today();
 
@@ -60,12 +71,12 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
                 {longDate(day).toUpperCase()}
               </Text>
               <Text fontSize={34} fontWeight={800}>{`${greeting()}!`}</Text>
-              <Text color={() => theme.text.secondary}>
+              <Muted>
                 {() => {
                   const n = open().length;
                   return n ? `Você tem ${n} ${n === 1 ? "tarefa aberta" : "tarefas abertas"}.` : "Nenhuma tarefa aberta. Bom descanso.";
                 }}
-              </Text>
+              </Muted>
             </Column>
             <Button variant="primary" onClick={() => openDay(day)}>
               <Row gap={8} align="center">
@@ -81,9 +92,9 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
                 <Column gap={2}>
                   <For
                     each={() => open().slice(0, 10)}
-                    fallback={<Text color={() => theme.text.secondary}>Tudo feito. Escreva "- [ ] " numa nota para criar uma tarefa.</Text>}
+                    fallback={<Muted>Tudo feito. Escreva "- [ ] " numa nota para criar uma tarefa.</Muted>}
                   >
-                    {(t) => <TaskRow ws={ws} task={t} showNote onOpen={() => openTask(t)} />}
+                    {(t) => <TaskRow task={t} showNote onOpen={() => openTask(t)} />}
                   </For>
                 </Column>
               </Section>
@@ -102,7 +113,7 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
                       >
                         <Icon svg={fileText} size={16} color={() => theme.text.secondary} />
                         <Text grow={1} maxLines={1}>{noteLabel(path)}</Text>
-                        <Text fontSize={12} maxLines={1} color={() => theme.text.secondary}>{folderOf(path)}</Text>
+                        <Caption maxLines={1}>{folderOf(path)}</Caption>
                       </Row>
                     )}
                   </For>
@@ -111,27 +122,27 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
             </Column>
 
             <Column width={330} gap={20}>
-              <Card gap={10} padding={18} background={() => colors.card} borderColor={() => colors.border} shadow={{ color: "#5a46140d", blur: 12, y: 2 }}>
-                <MonthHeader ui={ui} size={17} />
+              <HomeCard>
+                <MonthHeader size={17} />
                 <MonthGrid compact month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} colorOf={(id) => cals.source(id)?.color} />
                 <Box height={1} background={() => colors.border} />
                 <Row gap={8} align="center">
-                  <Text grow={1} fontSize={13} color={() => theme.text.secondary}>
+                  <Muted grow={1} fontSize={13}>
                     {() => {
                       const info = days().get(ui.selectedDay());
                       const n = info?.tasks.filter((t) => !t.done).length ?? 0;
                       const day = ui.selectedDay() === today() ? "Hoje" : shortDate(ui.selectedDay());
                       return `${day} · ${n ? `${n} ${n === 1 ? "tarefa aberta" : "tarefas abertas"}` : "sem tarefas"}`;
                     }}
-                  </Text>
+                  </Muted>
                   <Button label="Abrir" variant="flat" onClick={() => openDay(ui.selectedDay())} />
                 </Row>
-              </Card>
+              </HomeCard>
               <Section icon={calendarDays} title="Agenda de hoje">
                 <Column gap={6}>
                   <For
                     each={() => agendaOf(days().get(day)?.events ?? [], days().get(day)?.external ?? [])}
-                    fallback={<Text fontSize={13} color={() => theme.text.secondary}>Nada na agenda. No Calendário (Semana), arraste num horário para criar um evento.</Text>}
+                    fallback={<Muted fontSize={13}>Nada na agenda. No Calendário (Semana), arraste num horário para criar um evento.</Muted>}
                   >
                     {(item) => {
                       const past = () => !item.allDay && item.end <= new Date().getHours() * 60 + new Date().getMinutes();

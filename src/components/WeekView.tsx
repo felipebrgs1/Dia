@@ -26,15 +26,15 @@ import {
   untrack,
 } from "@nodebuilderjs/core";
 import { WEEKDAYS_SHORT, longDate, parseIso, today, weekOf } from "../dates.js";
+import { useCalendars, useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
 import { DEFAULT_LENGTH, formatTime, placeEvents } from "../vault/events.js";
 import { plainText } from "../vault/markdown.js";
-import type { VaultEvent, Workspace } from "../workspace.js";
+import type { VaultEvent } from "../workspace.js";
 import type { ExternalEvent } from "../calendars/ics.js";
-import type { Calendars } from "../calendars/store.js";
 import type { DayInfo } from "./Calendar.js";
 import { tint } from "./Calendars.js";
+import { Muted, Small } from "./Text.js";
 
 export const HOUR = 48;
 const SNAP = 15;
@@ -60,9 +60,11 @@ interface Editing {
   date: string;
 }
 
-export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: () => Map<string, DayInfo> }) {
-  const { ws, ui, cals } = props;
-  const colorOf = (e: ExternalEvent) => cals.source(e.calendarId)?.color ?? "#888888";
+export function WeekView(props: { days: () => Map<string, DayInfo> }) {
+  const ws = useWorkspace();
+  const ui = useUi();
+  const cals = useCalendars();
+  const colorOf = (e: ExternalEvent) => cals.source(e.calendarId)?.color ?? colors.faint;
   const week = createMemo(() => weekOf(ui.selectedDay()));
   const byDay = createMemo(() => {
     const out = new Map<string, VaultEvent[]>();
@@ -157,7 +159,7 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
         cursor="pointer"
         background={() => (ev.done ? colors.eventDone : colors.event)}
         opacity={() => (dragged() ? 0.35 : 1)}
-        hoverStyle={{ shadow: { color: "#5a46142e", blur: 8, y: 2 } }}
+        hoverStyle={{ shadow: () => ({ color: colors.shadowHover, blur: 8, y: 2 }) }}
         onPointerDown={(e) => {
           e.stop(); // not a "create" on the column underneath
           if (e.button !== 0) return;
@@ -182,7 +184,7 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
           {plainText(ev.title) || "(sem título)"}
         </Text>
         <Show when={box.height > 30}>
-          <Text fontSize={11} maxLines={1} color={() => theme.text.secondary}>{`${formatTime(ev.start)} – ${formatTime(ev.end)}`}</Text>
+          <Small maxLines={1}>{`${formatTime(ev.start)} – ${formatTime(ev.end)}`}</Small>
         </Show>
         <Box position="absolute" left={0} right={0} bottom={0} height={7} cursor="s-resize" />
       </Column>
@@ -206,16 +208,14 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
         clip
         cursor="pointer"
         background={() => tint(colorOf(ev))}
-        hoverStyle={{ shadow: { color: "#5a46142e", blur: 8, y: 2 } }}
+        hoverStyle={{ shadow: () => ({ color: colors.shadowHover, blur: 8, y: 2 }) }}
         onPointerDown={(e) => e.stop()}
         onClick={() => ui.setExternalDetail(ev)}
       >
         <Box position="absolute" left={0} top={0} width={3} height={box.height} background={() => colorOf(ev)} />
         <Text fontSize={12} bold maxLines={box.height > 40 ? 2 : 1}>{ev.title}</Text>
         <Show when={box.height > 30}>
-          <Text fontSize={11} maxLines={1} color={() => theme.text.secondary}>
-            {`${formatTime(ev.start)} – ${formatTime(ev.end)}${ev.location ? ` · ${ev.location}` : ""}`}
-          </Text>
+          <Small maxLines={1}>{`${formatTime(ev.start)} – ${formatTime(ev.end)}${ev.location ? ` · ${ev.location}` : ""}`}</Small>
         </Show>
       </Column>
     );
@@ -239,10 +239,11 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
           borderWidth={1.5}
           borderColor={() => colors.eventBar}
           background={() => colors.active}
+          fontSize={11}
         >
-          <Text fontSize={11} bold>{() => `${formatTime(d().start)} – ${formatTime(d().end)}`}</Text>
+          <Text bold>{() => `${formatTime(d().start)} – ${formatTime(d().end)}`}</Text>
           <Show when={() => d().kind !== "create"}>
-            <Text fontSize={11} maxLines={1}>{() => {
+            <Text maxLines={1}>{() => {
               const v = d();
               return v.kind === "create" ? "" : plainText(v.ev.title);
             }}</Text>
@@ -326,8 +327,9 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
                 width={0}
                 gap={4}
                 padding={[8, 6, 6, 6]}
+                fontSize={11}
                 cursor="pointer"
-                background={() => (selected() ? colors.active : "#00000000")}
+                background={() => (selected() ? colors.active : "transparent")}
                 hoverStyle={{ background: () => colors.hover }}
                 onClick={(e) => (e.clicks >= 2 ? (ui.setView("editor"), ws.openDaily(date())) : ui.setSelectedDay(date()))}
               >
@@ -339,7 +341,7 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
                     radius={13}
                     align="center"
                     justify="center"
-                    background={() => (isToday() ? colors.today : "#00000000")}
+                    background={() => (isToday() ? colors.today : "transparent")}
                   >
                     <Text fontSize={15} bold color={() => (isToday() ? colors.todayText : theme.text.primary)}>
                       {() => String(d().getDate())}
@@ -355,14 +357,14 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
                       background={() => tint(colorOf(e))}
                       onClick={() => ui.setExternalDetail(e)}
                     >
-                      <Text fontSize={11} maxLines={1}>{e.title}</Text>
+                      <Text maxLines={1}>{e.title}</Text>
                     </Row>
                   )}
                 </For>
                 <For each={() => (props.days().get(date())?.tasks ?? []).filter((t) => t.due === date()).slice(0, 2)}>
                   {(t) => (
                     <Row padding={[1, 6]} radius={4} background={() => colors.tagBg}>
-                      <Text fontSize={11} maxLines={1} color={() => (t.done ? theme.text.secondary : colors.link)}>{t.text}</Text>
+                      <Text maxLines={1} color={() => (t.done ? theme.text.secondary : colors.link)}>{t.text}</Text>
                     </Row>
                   )}
                 </For>
@@ -377,9 +379,9 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
           <Box width={GUTTER} height={24 * HOUR}>
             <For each={() => HOURS.slice(1)}>
               {(h) => (
-                <Text position="absolute" right={8} top={h * HOUR - 8} fontSize={11} color={() => theme.text.secondary}>
+                <Small position="absolute" right={8} top={h * HOUR - 8}>
                   {formatTime(h * 60)}
-                </Text>
+                </Small>
               )}
             </For>
           </Box>
@@ -419,11 +421,11 @@ export function WeekView(props: { ws: Workspace; ui: Ui; cals: Calendars; days: 
           </>
         }
       >
-        <Text fontSize={13} color={() => theme.text.secondary}>{() => (editing() ? longDate(editing()!.date) : "")}</Text>
+        <Muted fontSize={13}>{() => (editing() ? longDate(editing()!.date) : "")}</Muted>
         <TextField value={title} onInput={setTitle} onSubmit={save} placeholder="Título do evento" />
         <Row gap={8} align="center">
           <Select width={110} value={start} onChange={(v) => (setStart(v), end() <= v && setEnd(Math.min(DAY, v + DEFAULT_LENGTH)))} options={TIME_OPTIONS.slice(0, -1)} />
-          <Text color={() => theme.text.secondary}>até</Text>
+          <Muted>até</Muted>
           <Select width={110} value={end} onChange={setEnd} options={TIME_OPTIONS.filter((o) => o.value > start())} />
         </Row>
       </Dialog>

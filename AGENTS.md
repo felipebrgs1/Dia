@@ -61,3 +61,10 @@ that support skills load them on their own; others should read the topic's skill
 
 Notes for agents about this app (conventions, commands, decisions) go here, after the marker
 above: `nodebuilder agents update` replaces only the framework guide between the markers.
+
+- App state comes from context (`src/context.ts`): `useWorkspace()`, `useUi()`, `useCalendars()`
+  in the component body, provided once in `App.tsx`. Don't pass `ws`/`ui`/`cals` as props.
+- Secondary text: `<Muted>` (same size), `<Caption>` (12 px), `<Small>` (11 px) from
+  `src/components/Text.tsx`; or set `color`/`fontSize` once on the container (they inherit).
+- Every color lives in `src/theme.ts` (`colors.*`, light and dark), shadows included; write
+  `"transparent"`, not `"#00000000"`. Hover is `hoverStyle`, never a signal + pointer events.

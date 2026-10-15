@@ -397,7 +397,7 @@ export function Editor(props: {
             top={() => caret().y + 3}
             width={2}
             height={() => caret().height - 6}
-            background={() => (focused() && blink() ? theme.accent.base : "#00000000")}
+            background={() => (focused() && blink() ? theme.accent.base : "transparent")}
           />
         </Box>
       </Column>

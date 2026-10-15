@@ -2,17 +2,18 @@
 
 import { Column, For, Icon, Match, Row, Scroll, Switch, Text, createMemo, theme } from "@nodebuilderjs/core";
 import { fileText, link as linkIcon, listTree } from "../icons.js";
-import type { Ui } from "../ui.js";
+import { useUi, useWorkspace } from "../context.js";
 import { noteName, plainText } from "../vault/markdown.js";
-import type { Workspace } from "../workspace.js";
 import { IconButton, Item } from "./Item.js";
+import { Muted } from "./Text.js";
 
 function Empty(props: { text: string }) {
-  return <Text color={() => theme.text.secondary} fontSize={13} padding={8}>{props.text}</Text>;
+  return <Muted fontSize={13} padding={8}>{props.text}</Muted>;
 }
 
-export function RightPanel(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
+export function RightPanel() {
+  const ws = useWorkspace();
+  const ui = useUi();
   const backlinks = createMemo(() => {
     const path = ws.active();
     return path ? ws.backlinks(path) : [];

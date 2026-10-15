@@ -30,6 +30,18 @@ const light = {
   now: "#d9480f",
   graphNode: "#b3a37c",
   graphEdge: "#5a461426",
+  /** Status dot of the "Feito" board column. */
+  done: "#3f9142",
+  overdueBg: "#e01b2422",
+  /** Shadows, from the softest (resting cards) to the strongest (a card being dragged). */
+  shadowSoft: "#5a46140d",
+  shadowCard: "#5a46140f",
+  shadow: "#5a46141f",
+  shadowHover: "#5a46142e",
+  shadowLifted: "#5a461440",
+  /** Shadows of floating panels: context menu and quick switcher. */
+  shadowMenu: "#00000050",
+  shadowModal: "#00000060",
 };
 
 const dark: typeof light = {
@@ -57,6 +69,15 @@ const dark: typeof light = {
   now: "#ff7a45",
   graphNode: "#8f8670",
   graphEdge: "#fff3d626",
+  done: "#6cc070",
+  overdueBg: "#ff5c5c26",
+  shadowSoft: "#00000026",
+  shadowCard: "#0000002e",
+  shadow: "#00000047",
+  shadowHover: "#00000066",
+  shadowLifted: "#00000080",
+  shadowMenu: "#00000080",
+  shadowModal: "#00000099",
 };
 
 export const colors = createThemeTokens({ light, dark });

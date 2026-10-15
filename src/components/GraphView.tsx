@@ -4,17 +4,18 @@
 
 import { Canvas, Column, Row, Text, createEffect, createMemo, createSignal, onCleanup, requestAnimationFrame, theme, untrack } from "@nodebuilderjs/core";
 import { type SimNode, type Simulation, createSimulation, physics, running, tick } from "../graph/physics.js";
+import { useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
 import { noteName } from "../vault/markdown.js";
-import type { Workspace } from "../workspace.js";
+import { Caption } from "./Text.js";
 
 type GNode = SimNode & { path: string };
 
 const TICK_MS = 1000 / 60; // the simulation steps at 60 Hz whatever the screen rate
 
-export function GraphView(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
+export function GraphView() {
+  const ws = useWorkspace();
+  const ui = useUi();
   const [frame, setFrame] = createSignal(0);
   const [hover, setHover] = createSignal<string | null>(null);
   const [view, setView] = createSignal({ x: 0, y: 0, zoom: 1 });
@@ -114,9 +115,9 @@ export function GraphView(props: { ws: Workspace; ui: Ui }) {
     <Column grow={1} background={() => colors.page}>
       <Row padding={[10, 16]} gap={12} align="center">
         <Text bold>Visão de grafo</Text>
-        <Text fontSize={12} color={() => theme.text.secondary}>
+        <Caption>
           {() => `${sim().nodes.length} notas · ${sim().edges.length} links — arraste as notas, arraste o fundo para mover, roda para zoom`}
-        </Text>
+        </Caption>
       </Row>
       <Canvas
         grow={1}

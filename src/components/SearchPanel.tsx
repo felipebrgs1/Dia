@@ -1,11 +1,11 @@
 // Full-text search over the vault and the list of tags.
 
 import { Column, For, Row, Scroll, Show, Text, TextField, createMemo, theme } from "@nodebuilderjs/core";
+import { useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
 import { noteName } from "../vault/markdown.js";
-import type { Workspace } from "../workspace.js";
 import { Item } from "./Item.js";
+import { Caption, Muted } from "./Text.js";
 
 /** A line of text cut around a match, so the match shows even in long lines. */
 export function snippet(line: string, column: number, width = 60) {
@@ -14,8 +14,9 @@ export function snippet(line: string, column: number, width = 60) {
   return (start > 0 ? "…" : "") + cut + (start + width < line.length ? "…" : "");
 }
 
-export function SearchPanel(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
+export function SearchPanel() {
+  const ws = useWorkspace();
+  const ui = useUi();
   const hits = createMemo(() => ws.search(ui.query()));
   const total = () => hits().reduce((n, h) => n + Math.max(1, h.matches.length), 0);
   const openAt = (path: string, offset?: number) => {
@@ -26,9 +27,9 @@ export function SearchPanel(props: { ws: Workspace; ui: Ui }) {
     <Column grow={1} gap={8} padding={[8, 8, 0, 8]}>
       <TextField ref={(el) => el.focus()} value={ui.query} onInput={ui.setQuery} placeholder="Buscar nas notas..." />
       <Show when={() => ui.query().trim()}>
-        <Text fontSize={12} color={() => theme.text.secondary} padding={[0, 4]}>
+        <Caption padding={[0, 4]}>
           {() => (hits().length ? `${total()} resultado(s) em ${hits().length} nota(s)` : "Nada encontrado")}
-        </Text>
+        </Caption>
       </Show>
       <Scroll grow={1} gap={6} padding={[0, 0, 8, 0]}>
         <For each={hits}>
@@ -52,11 +53,12 @@ export function SearchPanel(props: { ws: Workspace; ui: Ui }) {
   );
 }
 
-export function TagsPanel(props: { ws: Workspace; ui: Ui }) {
-  const { ws, ui } = props;
+export function TagsPanel() {
+  const ws = useWorkspace();
+  const ui = useUi();
   return (
     <Scroll grow={1} padding={8} gap={2}>
-      <For each={ws.tags} fallback={<Text color={() => theme.text.secondary} padding={8}>Nenhuma tag. Escreva #tag em uma nota.</Text>}>
+      <For each={ws.tags} fallback={<Muted padding={8}>Nenhuma tag. Escreva #tag em uma nota.</Muted>}>
         {([tag, count]) => (
           <Item
             onClick={() => {

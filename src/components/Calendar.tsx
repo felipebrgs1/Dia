@@ -4,8 +4,8 @@
 import { Box, Button, Column, For, Grid, Icon, Row, Scroll, Show, Text, createMemo, createSignal, theme } from "@nodebuilderjs/core";
 import { MONTHS, WEEKDAYS_SHORT, addDays, dailyDateOf, longDate, monthGrid, parseIso, today, weekOf } from "../dates.js";
 import { chevronLeft, chevronRight, notebookPen } from "../icons.js";
+import { useCalendars, useUi, useWorkspace } from "../context.js";
 import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
 import { formatTime } from "../vault/events.js";
 import { plainText } from "../vault/markdown.js";
 import type { VaultEvent, VaultTask, Workspace } from "../workspace.js";
@@ -16,6 +16,7 @@ import { AgendaRow, agendaOf, tint } from "./Calendars.js";
 import { settings2 } from "../icons.js";
 import { IconButton } from "./Item.js";
 import { TaskRow } from "./Tasks.js";
+import { Caption, Muted, Small } from "./Text.js";
 
 export interface DayInfo {
   hasNote: boolean;
@@ -79,9 +80,9 @@ export function MonthGrid(props: {
       <Grid columns={7} gap={compact ? 2 : 0}>
         <For each={() => WEEKDAYS_SHORT}>
           {(w) => (
-            <Text fontSize={compact ? 11 : 12} textAlign="center" padding={[4, 0]} color={() => theme.text.secondary}>
+            <Caption fontSize={compact ? 11 : 12} textAlign="center" padding={[4, 0]}>
               {compact ? w.slice(0, 1).toUpperCase() : w}
-            </Text>
+            </Caption>
           )}
         </For>
       </Grid>
@@ -117,7 +118,7 @@ export function MonthGrid(props: {
                 radius={14}
                 align="center"
                 justify="center"
-                background={() => (isToday() ? colors.today : "#00000000")}
+                background={() => (isToday() ? colors.today : "transparent")}
               >
                 <Text
                   fontSize={compact ? 12 : 13}
@@ -136,12 +137,12 @@ export function MonthGrid(props: {
                   gap={2}
                   radius={8}
                   cursor="pointer"
-                  background={() => (props.selected() === iso ? colors.active : "#00000000")}
+                  background={() => (props.selected() === iso ? colors.active : "transparent")}
                   hoverStyle={{ background: () => colors.hover }}
                   onClick={(e) => (e.clicks >= 2 ? props.onOpen(iso) : props.onSelect(iso))}
                 >
                   {number}
-                  <Box width={4} height={4} radius={2} background={() => (info()?.events.length || info()?.external.length || open() ? theme.accent.base : info()?.hasNote ? colors.faint : "#00000000")} />
+                  <Box width={4} height={4} radius={2} background={() => (info()?.events.length || info()?.external.length || open() ? theme.accent.base : info()?.hasNote ? colors.faint : "transparent")} />
                 </Column>
               );
             return (
@@ -165,7 +166,7 @@ export function MonthGrid(props: {
                   </Show>
                 </Row>
                 <Show when={() => info()?.preview}>
-                  <Text fontSize={12} maxLines={2} color={() => theme.text.secondary}>{() => info()!.preview}</Text>
+                  <Caption maxLines={2}>{() => info()!.preview}</Caption>
                 </Show>
                 <For each={() => cellItems().slice(0, 3)}>
                   {(item) => (
@@ -174,22 +175,23 @@ export function MonthGrid(props: {
                       align="center"
                       padding={[1, 4]}
                       radius={4}
-                      background={() => (item.kind === "task" ? "#00000000" : item.color ? tint(item.color) : colors.event)}
+                      fontSize={11}
+                      background={() => (item.kind === "task" ? "transparent" : item.color ? tint(item.color) : colors.event)}
                     >
                       <Show when={item.kind === "task"}>
                         <Box width={6} height={6} radius={3} background={() => (item.done ? colors.faint : theme.accent.base)} />
                       </Show>
                       <Show when={item.time}>
-                        <Text fontSize={11} bold>{item.time!}</Text>
+                        <Text bold>{item.time!}</Text>
                       </Show>
-                      <Text fontSize={11} maxLines={1} grow={1} color={() => (item.done ? colors.faint : theme.text.primary)}>
+                      <Text maxLines={1} grow={1} color={() => (item.done ? colors.faint : theme.text.primary)}>
                         {item.title}
                       </Text>
                     </Row>
                   )}
                 </For>
                 <Show when={() => cellItems().length > 3}>
-                  <Text fontSize={11} color={() => theme.text.secondary}>{() => `+${cellItems().length - 3} itens`}</Text>
+                  <Small>{() => `+${cellItems().length - 3} itens`}</Small>
                 </Show>
               </Column>
             );
@@ -200,8 +202,8 @@ export function MonthGrid(props: {
   );
 }
 
-export function MonthHeader(props: { ui: Ui; size?: number }) {
-  const { ui } = props;
+export function MonthHeader(props: { size?: number }) {
+  const ui = useUi();
   const shift = (by: number) =>
     ui.setMonth((m) => {
       const d = new Date(m.year, m.month + by, 1);
@@ -219,8 +221,10 @@ export function MonthHeader(props: { ui: Ui; size?: number }) {
   );
 }
 
-export function CalendarView(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
-  const { ws, ui, cals } = props;
+export function CalendarView() {
+  const ws = useWorkspace();
+  const ui = useUi();
+  const cals = useCalendars();
   const days = dayIndex(ws, cals);
   const colorOf = (id: string) => cals.source(id)?.color;
   const selectedInfo = () => days().get(ui.selectedDay());
@@ -253,8 +257,8 @@ export function CalendarView(props: { ws: Workspace; ui: Ui; cals: Calendars }) 
       padding={[5, 12]}
       radius={6}
       cursor="pointer"
-      background={() => (ui.calendarMode() === p.mode ? colors.page : "#00000000")}
-      shadow={() => (ui.calendarMode() === p.mode ? { color: "#5a46141f", blur: 4, y: 1 } : { color: "#00000000", blur: 0, y: 0 })}
+      background={() => (ui.calendarMode() === p.mode ? colors.page : "transparent")}
+      shadow={() => (ui.calendarMode() === p.mode ? { color: colors.shadow, blur: 4, y: 1 } : { color: "transparent", blur: 0, y: 0 })}
       onClick={() => ui.setCalendarMode(p.mode)}
     >
       <Text fontSize={13} bold={() => ui.calendarMode() === p.mode}>{p.label}</Text>
@@ -283,21 +287,21 @@ export function CalendarView(props: { ws: Workspace; ui: Ui; cals: Calendars }) 
               <Column radius={10} clip borderWidth={1} borderColor={() => colors.border}>
                 <MonthGrid month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} colorOf={colorOf} />
               </Column>
-              <Text fontSize={12} color={() => theme.text.secondary}>
+              <Caption>
                 Clique num dia para ver detalhes; dois cliques abrem a nota do dia. Tarefas com 📅 AAAA-MM-DD aparecem no dia do prazo.
-              </Text>
+              </Caption>
             </Scroll>
           }
         >
           <Box height={1} background={() => colors.border} />
-          <WeekView ws={ws} ui={ui} cals={cals} days={days} />
+          <WeekView days={days} />
         </Show>
       </Column>
       <Box width={1} background={() => colors.border} />
       <Column width={300} padding={20} gap={12} background={() => colors.sidebar}>
-        <Text fontSize={12} bold letterSpacing={1} color={() => theme.text.secondary}>
+        <Caption bold letterSpacing={1}>
           {() => (ui.selectedDay() === today() ? "HOJE" : "DIA SELECIONADO")}
-        </Text>
+        </Caption>
         <Text fontSize={20} bold>{() => longDate(ui.selectedDay()).replace(/^./, (c) => c.toUpperCase())}</Text>
         <Button
           variant="primary"
@@ -308,7 +312,7 @@ export function CalendarView(props: { ws: Workspace; ui: Ui; cals: Calendars }) 
           <Text bold fontSize={13}>{() => `Agenda (${agenda().length})`}</Text>
           <For
             each={agenda}
-            fallback={<Text fontSize={13} color={() => theme.text.secondary}>Sem eventos. Na Semana, arraste num horário vazio para criar.</Text>}
+            fallback={<Muted fontSize={13}>Sem eventos. Na Semana, arraste num horário vazio para criar.</Muted>}
           >
             {(item) =>
               item.kind === "note" ? (
@@ -327,8 +331,8 @@ export function CalendarView(props: { ws: Workspace; ui: Ui; cals: Calendars }) 
           </For>
           <Box height={6} />
           <Text bold fontSize={13}>{() => `Tarefas (${selectedInfo()?.tasks.length ?? 0})`}</Text>
-          <For each={() => selectedInfo()?.tasks ?? []} fallback={<Text fontSize={13} color={() => theme.text.secondary}>Nada para este dia.</Text>}>
-            {(t) => <TaskRow ws={ws} task={t} showNote onOpen={() => openAt(t.path, t.offset)} />}
+          <For each={() => selectedInfo()?.tasks ?? []} fallback={<Muted fontSize={13}>Nada para este dia.</Muted>}>
+            {(t) => <TaskRow task={t} showNote onOpen={() => openAt(t.path, t.offset)} />}
           </For>
         </Scroll>
       </Column>
