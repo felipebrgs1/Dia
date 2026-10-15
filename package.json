@@ -15,7 +15,7 @@
     "agents:update": "nodebuilder agents update"
   },
   "dependencies": {
-    "@nodebuilderjs/core": "^0.4.1",
+    "@nodebuilderjs/core": "^0.5.0",
     "ical.js": "^2.2.1",
     "lucide-static": "^1.57.0"
   },
@@ -23,7 +23,7 @@
     "@types/bun": "^1.4.2",
     "typescript": "7.0.2"
   },
-  "description": "Notas em markdown, tarefas e calend\u00e1rio num lugar s\u00f3",
+  "description": "Notas em markdown, tarefas e calendário num lugar só",
   "homepage": "https://github.com/felipebrgs1/Dia",
   "license": "MIT"
 }
