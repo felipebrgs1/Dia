@@ -18,10 +18,10 @@ import {
   createMemo,
   createSignal,
   isScreenshot,
-  theme,
 } from "@nodebuilderjs/core";
 import appIcon from "./assets/dia.svg" with { type: "text" };
-import { type Fetcher, createCalendars } from "./calendars/store.js";
+import { CALENDAR_COLORS, type Fetcher, createCalendars } from "./calendars/store.js";
+import { AppProvider } from "./context.js";
 import { BoardView } from "./components/BoardView.js";
 import { CalendarsDialog, ExternalEventDialog } from "./components/Calendars.js";
 import { CalendarView } from "./components/Calendar.js";
@@ -51,7 +51,7 @@ import {
   squareKanban,
   sun,
 } from "./icons.js";
-import { applyTheme, colors } from "./theme.js";
+import { applyTheme, followColorSpace } from "./theme.js";
 import { type LeftTab, type View, createUi } from "./ui.js";
 import { countWords, folderOf, noteName } from "./vault/markdown.js";
 import { type Vault, defaultVaultPath, memoryVault, openVault } from "./vault/vault.js";
@@ -62,7 +62,7 @@ import { createWorkspace } from "./workspace.js";
 const SIDEBAR_WIDTH = 248;
 
 function Line(props: { vertical?: boolean }) {
-  return props.vertical ? <Box width={1} background={() => colors.border} /> : <Box height={1} background={() => colors.border} />;
+  return props.vertical ? <Box width={1} background="border" /> : <Box height={1} background="border" />;
 }
 
 export function App(
@@ -76,13 +76,14 @@ export function App(
   const demo = isScreenshot() && !props.vault && !props.vaultPath;
   if (demo) {
     // Screenshots show an example external calendar, from the cache (no network).
-    vault.writeMeta("config.json", JSON.stringify({ calendars: [{ id: "demo", name: "Trabalho (Google)", url: "https://exemplo", color: "#3b82f6", enabled: true }] }));
+    vault.writeMeta("config.json", JSON.stringify({ calendars: [{ id: "demo", name: "Trabalho (Google)", url: "https://exemplo", color: CALENDAR_COLORS[0], enabled: true }] }));
     vault.writeMeta("cache/demo.ics", sampleIcs());
   }
   const ws = createWorkspace(vault);
   const cals = createCalendars(vault, { fetcher: props.fetcher, autoRefresh: !demo });
   const ui = createUi();
   applyTheme(props.theme ?? "light");
+  followColorSpace();
 
   if (props.note && ws.files().includes(props.note)) {
     ws.open(props.note);
@@ -161,15 +162,15 @@ export function App(
       padding={[7, 10]}
       radius={6}
       cursor="pointer"
-      background={() => (ui.view() === p.view ? colors.active : "#00000000")}
-      hoverStyle={{ background: () => (ui.view() === p.view ? colors.active : colors.hover) }}
-      color={() => (ui.view() === p.view ? theme.text.primary : theme.text.secondary)}
+      background={() => (ui.view() === p.view ? "active" : "transparent")}
+      hoverStyle={{ background: () => (ui.view() === p.view ? "active" : "hover") }}
+      color={() => (ui.view() === p.view ? "text.primary" : "text.secondary")}
       onClick={() => ui.setView(p.view)}
     >
       <Icon svg={p.icon} size={17} strokeWidth={1.75} />
       <Text grow={1} bold={() => ui.view() === p.view}>{p.label}</Text>
       <Show when={() => p.hint}>
-        <Text fontSize={11} color={() => colors.faint}>{p.hint!}</Text>
+        <Text variant="small" color="faint">{p.hint!}</Text>
       </Show>
     </Row>
   );
@@ -179,9 +180,9 @@ export function App(
   );
 
   const TitleBar = () => (
-    <Row dragRegion height={44} align="center" gap={6} padding={[0, 8, 0, 12]} background={() => colors.titlebar}>
-      <Box width={24} height={24} radius={7} align="center" justify="center" background={() => colors.today}>
-        <Icon svg={sun} size={15} strokeWidth={2.25} color={() => colors.todayText} />
+    <Row dragRegion height={44} align="center" gap={6} padding={[0, 8, 0, 12]} background="titlebar">
+      <Box width={24} height={24} radius={7} align="center" justify="center" background="today">
+        <Icon svg={sun} size={15} strokeWidth={2.25} color="todayText" />
       </Box>
       <Text bold fontSize={15} padding={[0, 6, 0, 2]}>Dia</Text>
       <IconButton icon={arrowLeft} tip="Voltar (Alt+←)" onClick={ws.goBack} size={16} />
@@ -195,16 +196,16 @@ export function App(
         padding={[0, 10]}
         radius={8}
         cursor="pointer"
-        background={() => colors.page}
+        background="page"
         borderWidth={1}
-        borderColor={() => colors.border}
-        hoverStyle={{ borderColor: () => theme.accent.base }}
-        color={() => theme.text.secondary}
+        borderColor="border"
+        hoverStyle={{ borderColor: "accent.base" }}
+        color="text.secondary"
         onClick={() => ui.setSwitcher(true)}
       >
         <Icon svg={searchIcon} size={15} />
         <Text grow={1} fontSize={13}>Buscar ou abrir uma nota</Text>
-        <Text fontSize={11} color={() => colors.faint}>Ctrl K</Text>
+        <Text variant="small" color="faint">Ctrl K</Text>
       </Row>
       <Box grow={1} />
       <Show when={() => ui.view() === "editor"}>
@@ -221,7 +222,7 @@ export function App(
   );
 
   const Sidebar = () => (
-    <Column width={SIDEBAR_WIDTH} background={() => colors.sidebar}>
+    <Column width={SIDEBAR_WIDTH} background="sidebar">
       <Column padding={[10, 8, 6, 8]} gap={1}>
         <NavItem icon={house} label="Hoje" view="home" />
         <NavItem icon={calendarDays} label="Calendário" view="calendar" />
@@ -233,24 +234,24 @@ export function App(
           padding={[7, 10]}
           radius={6}
           cursor="pointer"
-          hoverStyle={{ background: () => colors.hover }}
-          color={() => theme.text.secondary}
+          hoverStyle={{ background: "hover" }}
+          color="text.secondary"
           onClick={openToday}
         >
           <Icon svg={notebookPen} size={17} strokeWidth={1.75} />
           <Text grow={1}>Nota de hoje</Text>
-          <Text fontSize={11} color={() => colors.faint}>Ctrl D</Text>
+          <Text variant="small" color="faint">Ctrl D</Text>
         </Row>
       </Column>
       <Line />
       <Row padding={[6, 8, 0, 14]} align="center" gap={2}>
-        <Text grow={1} fontSize={11} bold letterSpacing={1} color={() => theme.text.secondary}>
+        <Text variant="small" grow={1} bold letterSpacing={1}>
           {() => ({ files: "NOTAS", search: "BUSCAR", tags: "TAGS" })[ui.leftTab()]}
         </Text>
         <Show when={() => ui.leftTab() === "files"}>
           <IconButton icon={filePlus} tip="Nova nota (Ctrl+N)" onClick={newNote} size={15} />
           <IconButton icon={folderPlus} tip="Nova pasta" onClick={() => ui.setNewFolder(true)} size={15} />
-          <Box width={1} height={16} margin={[0, 4]} background={() => colors.border} />
+          <Box width={1} height={16} margin={[0, 4]} background="border" />
         </Show>
         <TabButton icon={filesIcon} tab="files" tip="Notas" />
         <TabButton icon={searchIcon} tab="search" tip="Buscar (Ctrl+Shift+F)" />
@@ -258,13 +259,13 @@ export function App(
       </Row>
       <Switch>
         <Match when={() => ui.leftTab() === "files"}>
-          <FileExplorer ws={ws} ui={ui} />
+          <FileExplorer />
         </Match>
         <Match when={() => ui.leftTab() === "search"}>
-          <SearchPanel ws={ws} ui={ui} />
+          <SearchPanel />
         </Match>
         <Match when={() => ui.leftTab() === "tags"}>
-          <TagsPanel ws={ws} ui={ui} />
+          <TagsPanel />
         </Match>
       </Switch>
     </Column>
@@ -272,7 +273,7 @@ export function App(
 
   const EditorPane = (): Child => (
     <Row grow={1}>
-      <Column grow={1} width={0} background={() => colors.page}>
+      <Column grow={1} width={0} background="page">
         <Show
           when={ws.active}
           fallback={
@@ -296,7 +297,7 @@ export function App(
             api={ui.setEditor}
             header={
               <Column gap={4} padding={[4, 0, 16, 0]}>
-                <Text fontSize={12} color={() => theme.text.secondary}>
+                <Text variant="caption">
                   {() => (ws.active() && folderOf(ws.active()!) ? folderOf(ws.active()!).replace(/\//g, " / ") : " ")}
                 </Text>
                 <Text fontSize={32} fontWeight={800} cursor="text" onClick={() => ws.active() && ui.setRenaming(ws.active())}>
@@ -305,17 +306,17 @@ export function App(
               </Column>
             }
           />
-          <Row padding={[4, 14]} gap={16} justify="end" color={() => theme.text.secondary}>
-            <Text fontSize={12}>{() => `${ws.backlinks(ws.active() ?? "").length} backlinks`}</Text>
-            <Text fontSize={12}>{() => `${countWords(text())} palavras`}</Text>
-            <Text fontSize={12}>{() => `${text().length} caracteres`}</Text>
+          <Row padding={[4, 14]} gap={16} justify="end" fontSize={12} color="text.secondary">
+            <Text>{() => `${ws.backlinks(ws.active() ?? "").length} backlinks`}</Text>
+            <Text>{() => `${countWords(text())} palavras`}</Text>
+            <Text>{() => `${text().length} caracteres`}</Text>
           </Row>
         </Show>
       </Column>
       <Show when={ui.rightOpen}>
         <Line vertical />
-        <Column width={SIDEBAR_WIDTH + 12} background={() => colors.sidebar}>
-          <RightPanel ws={ws} ui={ui} />
+        <Column width={SIDEBAR_WIDTH + 12} background="sidebar">
+          <RightPanel />
         </Column>
       </Show>
     </Row>
@@ -326,91 +327,93 @@ export function App(
       title={() => (ui.view() === "editor" && ws.active() ? `${noteName(ws.active()!)} — Dia` : "Dia")}
       icon={appIcon}
       appId="dev.nodebuilder.dia" width={1320} height={840} decorations={false} onClose={() => (ws.flush(), tray.onClose())} onKeyDown={shortcuts}>
-      <TitleBar />
-      <Line />
-      <Row grow={1}>
-        <Show when={ui.leftOpen}>
-          <Sidebar />
-          <Line vertical />
+      <AppProvider value={{ ws, ui, cals }}>
+        <TitleBar />
+        <Line />
+        <Row grow={1}>
+          <Show when={ui.leftOpen}>
+            <Sidebar />
+            <Line vertical />
+          </Show>
+          <Switch>
+            <Match when={() => ui.view() === "home"}>
+              <Home />
+            </Match>
+            <Match when={() => ui.view() === "calendar"}>
+              <CalendarView />
+            </Match>
+            <Match when={() => ui.view() === "board"}>
+              <BoardView />
+            </Match>
+            <Match when={() => ui.view() === "graph"}>
+              <GraphView />
+            </Match>
+            <Match when={() => ui.view() === "editor"}>
+              <EditorPane />
+            </Match>
+          </Switch>
+        </Row>
+
+        <CalendarsDialog />
+        <ExternalEventDialog />
+
+        <Show when={ui.switcher}>
+          <QuickSwitcher />
         </Show>
-        <Switch>
-          <Match when={() => ui.view() === "home"}>
-            <Home ws={ws} ui={ui} cals={cals} />
-          </Match>
-          <Match when={() => ui.view() === "calendar"}>
-            <CalendarView ws={ws} ui={ui} cals={cals} />
-          </Match>
-          <Match when={() => ui.view() === "board"}>
-            <BoardView ws={ws} ui={ui} />
-          </Match>
-          <Match when={() => ui.view() === "graph"}>
-            <GraphView ws={ws} ui={ui} />
-          </Match>
-          <Match when={() => ui.view() === "editor"}>
-            <EditorPane />
-          </Match>
-        </Switch>
-      </Row>
 
-      <CalendarsDialog cals={cals} ui={ui} />
-      <ExternalEventDialog cals={cals} ws={ws} ui={ui} />
+        <Dialog
+          open={() => ui.renaming() !== null}
+          onClose={() => ui.setRenaming(null)}
+          title="Renomear nota"
+          actions={
+            <>
+              <Button label="Cancelar" variant="flat" onClick={() => ui.setRenaming(null)} />
+              <Button label="Renomear" variant="primary" onClick={confirmRename} />
+            </>
+          }
+        >
+          <TextField value={name} onInput={(v) => (setName(v), setError(""))} onSubmit={confirmRename} />
+          <Text variant="caption" color={() => (error() ? "danger.base" : "text.secondary")}>
+            {() => error() || "Os links para esta nota serão atualizados."}
+          </Text>
+        </Dialog>
 
-      <Show when={ui.switcher}>
-        <QuickSwitcher ws={ws} ui={ui} />
-      </Show>
+        <Dialog
+          open={() => ui.deleting() !== null}
+          onClose={() => ui.setDeleting(null)}
+          title="Excluir nota?"
+          actions={
+            <>
+              <Button label="Cancelar" variant="flat" onClick={() => ui.setDeleting(null)} />
+              <Button
+                label="Excluir"
+                variant="danger"
+                onClick={() => {
+                  const path = ui.deleting();
+                  ui.setDeleting(null);
+                  if (path) ws.remove(path);
+                }}
+              />
+            </>
+          }
+        >
+          <Text>{() => `"${noteName(ui.deleting() ?? "")}" vai para a lixeira do cofre (.trash).`}</Text>
+        </Dialog>
 
-      <Dialog
-        open={() => ui.renaming() !== null}
-        onClose={() => ui.setRenaming(null)}
-        title="Renomear nota"
-        actions={
-          <>
-            <Button label="Cancelar" variant="flat" onClick={() => ui.setRenaming(null)} />
-            <Button label="Renomear" variant="primary" onClick={confirmRename} />
-          </>
-        }
-      >
-        <TextField value={name} onInput={(v) => (setName(v), setError(""))} onSubmit={confirmRename} />
-        <Text fontSize={12} color={() => (error() ? theme.danger.base : theme.text.secondary)}>
-          {() => error() || "Os links para esta nota serão atualizados."}
-        </Text>
-      </Dialog>
-
-      <Dialog
-        open={() => ui.deleting() !== null}
-        onClose={() => ui.setDeleting(null)}
-        title="Excluir nota?"
-        actions={
-          <>
-            <Button label="Cancelar" variant="flat" onClick={() => ui.setDeleting(null)} />
-            <Button
-              label="Excluir"
-              variant="danger"
-              onClick={() => {
-                const path = ui.deleting();
-                ui.setDeleting(null);
-                if (path) ws.remove(path);
-              }}
-            />
-          </>
-        }
-      >
-        <Text>{() => `"${noteName(ui.deleting() ?? "")}" vai para a lixeira do cofre (.trash).`}</Text>
-      </Dialog>
-
-      <Dialog
-        open={ui.newFolder}
-        onClose={() => ui.setNewFolder(false)}
-        title="Nova pasta"
-        actions={
-          <>
-            <Button label="Cancelar" variant="flat" onClick={() => ui.setNewFolder(false)} />
-            <Button label="Criar" variant="primary" onClick={confirmFolder} />
-          </>
-        }
-      >
-        <TextField value={name} onInput={setName} onSubmit={confirmFolder} placeholder="Nome da pasta" />
-      </Dialog>
+        <Dialog
+          open={ui.newFolder}
+          onClose={() => ui.setNewFolder(false)}
+          title="Nova pasta"
+          actions={
+            <>
+              <Button label="Cancelar" variant="flat" onClick={() => ui.setNewFolder(false)} />
+              <Button label="Criar" variant="primary" onClick={confirmFolder} />
+            </>
+          }
+        >
+          <TextField value={name} onInput={setName} onSubmit={confirmFolder} placeholder="Nome da pasta" />
+        </Dialog>
+      </AppProvider>
     </Window>
   );
 }

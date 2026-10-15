@@ -1,35 +1,44 @@
 // "Hoje": the start screen. Greeting, today's note, open tasks from every note, the month and
 // the notes touched last.
 
-import { Box, Button, Card, type Child, Column, For, Icon, Row, Scroll, Show, Text, createMemo, theme } from "@nodebuilderjs/core";
+import { Box, Button, Card, type Child, Column, For, Icon, Row, Scroll, Show, Text, createMemo } from "@nodebuilderjs/core";
 import { greeting, longDate, noteLabel, shortDate, today } from "../dates.js";
 import { calendarDays, clock, fileText, listTodo, notebookPen } from "../icons.js";
-import { colors } from "../theme.js";
-import type { Ui } from "../ui.js";
+import { useCalendars, useUi, useWorkspace } from "../context.js";
 import { folderOf, plainText } from "../vault/markdown.js";
-import type { VaultTask, Workspace } from "../workspace.js";
-import type { Calendars } from "../calendars/store.js";
+import type { VaultTask } from "../workspace.js";
 import { MonthGrid, MonthHeader, dayIndex } from "./Calendar.js";
 import { AgendaRow, agendaOf } from "./Calendars.js";
 import { TaskRow } from "./Tasks.js";
 
-function Section(props: { icon: string; title: string; extra?: () => string; children?: Child }) {
+/** A card of the home screen, on the warm card color with a soft shadow. */
+function HomeCard(props: { children?: Child }) {
   return (
-    <Card gap={10} padding={18} background={() => colors.card} borderColor={() => colors.border} shadow={{ color: "#5a46140d", blur: 12, y: 2 }}>
-      <Row gap={8} align="center">
-        <Icon svg={props.icon} size={16} color={() => theme.accent.base} />
-        <Text bold grow={1}>{props.title}</Text>
-        <Show when={() => props.extra?.()}>
-          <Text fontSize={12} color={() => theme.text.secondary}>{() => props.extra!()}</Text>
-        </Show>
-      </Row>
+    <Card gap={10} padding={18} background="card" borderColor="border" shadow={{ color: "shadowSoft", blur: 12, y: 2 }}>
       {props.children}
     </Card>
   );
 }
 
-export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
-  const { ws, ui, cals } = props;
+function Section(props: { icon: string; title: string; extra?: () => string; children?: Child }) {
+  return (
+    <HomeCard>
+      <Row gap={8} align="center">
+        <Icon svg={props.icon} size={16} color="accent.base" />
+        <Text bold grow={1}>{props.title}</Text>
+        <Show when={() => props.extra?.()}>
+          <Text variant="caption">{() => props.extra!()}</Text>
+        </Show>
+      </Row>
+      {props.children}
+    </HomeCard>
+  );
+}
+
+export function Home() {
+  const ws = useWorkspace();
+  const ui = useUi();
+  const cals = useCalendars();
   const days = dayIndex(ws, cals);
   const day = today();
 
@@ -51,16 +60,16 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
   };
 
   return (
-    <Scroll grow={1} background={() => colors.page}>
+    <Scroll grow={1} background="page">
       <Column align="center" padding={[36, 24, 32, 24]}>
         <Column width="100%" maxWidth={1040} gap={24}>
           <Row align="end" gap={16}>
             <Column grow={1} gap={4}>
-              <Text fontSize={13} bold letterSpacing={1} color={() => theme.accent.pressed}>
+              <Text fontSize={13} bold letterSpacing={1} color="accent.pressed">
                 {longDate(day).toUpperCase()}
               </Text>
               <Text fontSize={34} fontWeight={800}>{`${greeting()}!`}</Text>
-              <Text color={() => theme.text.secondary}>
+              <Text variant="muted">
                 {() => {
                   const n = open().length;
                   return n ? `Você tem ${n} ${n === 1 ? "tarefa aberta" : "tarefas abertas"}.` : "Nenhuma tarefa aberta. Bom descanso.";
@@ -81,9 +90,9 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
                 <Column gap={2}>
                   <For
                     each={() => open().slice(0, 10)}
-                    fallback={<Text color={() => theme.text.secondary}>Tudo feito. Escreva "- [ ] " numa nota para criar uma tarefa.</Text>}
+                    fallback={<Text variant="muted">Tudo feito. Escreva "- [ ] " numa nota para criar uma tarefa.</Text>}
                   >
-                    {(t) => <TaskRow ws={ws} task={t} showNote onOpen={() => openTask(t)} />}
+                    {(t) => <TaskRow task={t} showNote onOpen={() => openTask(t)} />}
                   </For>
                 </Column>
               </Section>
@@ -97,12 +106,12 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
                         padding={[6, 8]}
                         radius={6}
                         cursor="pointer"
-                        hoverStyle={{ background: () => colors.hover }}
+                        hoverStyle={{ background: "hover" }}
                         onClick={() => (ui.setView("editor"), ws.open(path))}
                       >
-                        <Icon svg={fileText} size={16} color={() => theme.text.secondary} />
+                        <Icon svg={fileText} size={16} color="text.secondary" />
                         <Text grow={1} maxLines={1}>{noteLabel(path)}</Text>
-                        <Text fontSize={12} maxLines={1} color={() => theme.text.secondary}>{folderOf(path)}</Text>
+                        <Text variant="caption" maxLines={1}>{folderOf(path)}</Text>
                       </Row>
                     )}
                   </For>
@@ -111,12 +120,12 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
             </Column>
 
             <Column width={330} gap={20}>
-              <Card gap={10} padding={18} background={() => colors.card} borderColor={() => colors.border} shadow={{ color: "#5a46140d", blur: 12, y: 2 }}>
-                <MonthHeader ui={ui} size={17} />
+              <HomeCard>
+                <MonthHeader size={17} />
                 <MonthGrid compact month={ui.month} days={days} selected={ui.selectedDay} onSelect={ui.setSelectedDay} onOpen={openDay} colorOf={(id) => cals.source(id)?.color} />
-                <Box height={1} background={() => colors.border} />
+                <Box height={1} background="border" />
                 <Row gap={8} align="center">
-                  <Text grow={1} fontSize={13} color={() => theme.text.secondary}>
+                  <Text variant="muted" grow={1} fontSize={13}>
                     {() => {
                       const info = days().get(ui.selectedDay());
                       const n = info?.tasks.filter((t) => !t.done).length ?? 0;
@@ -126,12 +135,12 @@ export function Home(props: { ws: Workspace; ui: Ui; cals: Calendars }) {
                   </Text>
                   <Button label="Abrir" variant="flat" onClick={() => openDay(ui.selectedDay())} />
                 </Row>
-              </Card>
+              </HomeCard>
               <Section icon={calendarDays} title="Agenda de hoje">
                 <Column gap={6}>
                   <For
                     each={() => agendaOf(days().get(day)?.events ?? [], days().get(day)?.external ?? [])}
-                    fallback={<Text fontSize={13} color={() => theme.text.secondary}>Nada na agenda. No Calendário (Semana), arraste num horário para criar um evento.</Text>}
+                    fallback={<Text variant="muted" fontSize={13}>Nada na agenda. No Calendário (Semana), arraste num horário para criar um evento.</Text>}
                   >
                     {(item) => {
                       const past = () => !item.allDay && item.end <= new Date().getHours() * 60 + new Date().getMinutes();

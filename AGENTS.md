@@ -31,12 +31,17 @@ nodebuilder app: native Linux UI in TSX, **no DOM and no React**. Read this befo
 - `requestAnimationFrame` is imported from `@nodebuilderjs/core` (there is no global one).
 - **Only functions are reactive.** `<Text>{count}</Text>` or `text={() => ...}` update;
   `<Text>{count()}</Text>` is read once and never changes. The same goes for styles:
-  `background={() => (active() ? "#3584e4" : "#0000")}`, and for theme colors:
-  `color={() => theme.text.secondary}` follows a switch to the dark theme.
+  `background={() => (active() ? "#3584e4" : "#0000")}`. Theme colors go by name,
+  `color="text.secondary"` (or an app token from `createThemeTokens`): resolved when painting,
+  they follow a switch to the dark theme without an accessor.
 - Lists: `<For each={list}>{(item) => ...}</For>` (keyed by reference) or
   `<Index each={list}>{(item) => ...}</Index>` (by position; `item` is an accessor).
   Conditions: `<Show when={() => ...} fallback={...}>`; several cases: `<Switch>` with
   `<Match when={...}>`. Errors: `<ErrorBoundary fallback={(error, reset) => ...}>`.
+- **No compiler, unlike Solid:** an expression in JSX runs when that JSX is evaluated, even
+  inside a `<Show>`/`<Match>` that is false. `<Show when={() => t.due}><Text>{fmt(t.due!)}</Text></Show>`
+  calls `fmt(undefined)` right away. Defer it: `{() => fmt(t.due!)}`, or take the value from a
+  function child, `{(due) => <Text>{fmt(due())}</Text>}`. Components inside (`<Card/>`) do wait.
 - Styles are flat props (`padding`, `gap`, `grow`, `background`...), not CSS. There is no
   `className`, `style={{}}`, `div` or `useState`, and React libraries (e.g. `lucide-react`) don't work.
 
@@ -46,7 +51,7 @@ that support skills load them on their own; others should read the topic's skill
 
 | Skill | When |
 |---|---|
-| `nodebuilder-ui` | screens, widgets (incl. custom title bar with `dragRegion`/`WindowControls`, window `icon`, system tray (`createTray`, `windowControls.hide/show`), `TextArea` and text selection/undo, `RichText` (styled spans, links), `Toggle`, `RadioGroup`, `Slider`, `Select`, `Tabs`, `Tooltip`, `Dialog`, `ProgressBar`, `disabled`), style props (incl. gradient `background={{ linear, angle }}`), fonts (`fontFamily`, `registerFont`, `fontFeatures`, `fontVariations`, `fontFamilies()`), hover/press/focus (`hoverStyle`, `pressStyle`, `focusStyle`, `createInteraction`), layout (`Grid` of equal columns or `minColumnWidth`, percentages `width="50%"`, `radius={[tl, tr, br, bl]}`, `wrap` rows of chips, `margin`, `aspectRatio`, equal columns in a row with `width={0} grow={1}`, `position="absolute"`, `zIndex`, `clip`, `shadow`, overflow warnings), events, own components, `For`/`Index`/`Show`/`Switch`, `ErrorBoundary`, scrolling (horizontal, scrollbars, keyboard, `scrollIntoView`), context, `ref` (focus, scroll), `onMount`, `onResize`, window-wide keys (`<Window onKeyDown>`, `focusable`), `TextField password`, `Overlay` (dialog, menu, tooltip, `inset`), `opacity`/`translate`, theme (light/dark, `setTheme`), animations (`createTween`, `animate`, `easing`, `mixColor`), selectable text, copy/paste |
+| `nodebuilder-ui` | screens, widgets (incl. custom title bar with `dragRegion`/`WindowControls`, window `icon`, system tray (`createTray`, `windowControls.hide/show`), `TextArea` and text selection/undo, `RichText` (styled spans, links), `Toggle`, `RadioGroup`, `Slider`, `Select`, `Tabs`, `Tooltip`, `Dialog`, `ProgressBar`, `disabled`), style props (incl. gradient `background={{ linear, angle }}`, wide-gamut colors `color(display-p3 ...)`/`oklch()`), fonts (`fontFamily`, `registerFont`, `fontFeatures`, `fontVariations`, `fontFamilies()`), hover/press/focus (`hoverStyle`, `pressStyle`, `focusStyle`, `createInteraction`), layout (`Grid` of equal columns or `minColumnWidth`, percentages `width="50%"`, `radius={[tl, tr, br, bl]}`, `wrap` rows of chips, `margin`, `aspectRatio`, equal columns in a row with `width={0} grow={1}`, `position="absolute"`, `zIndex`, `clip`, `shadow`, overflow warnings), events, own components, `For`/`Index`/`Show`/`Switch`, `ErrorBoundary`, scrolling (horizontal, scrollbars, keyboard, `scrollIntoView`), context, `ref` (focus, scroll), `onMount`, `onResize`, window-wide keys (`<Window onKeyDown>`, `focusable`), `TextField password`, `Overlay` (dialog, menu, tooltip, `inset`), `opacity`/`translate`, theme (light/dark, `setTheme`, colors by name `color="text.secondary"`, `createThemeTokens`, `<Text variant>`), animations (`createTween`, `animate`, `easing`, `mixColor`), selectable text, copy/paste |
 | `nodebuilder-from-react` | before installing libraries or porting React/web code |
 | `nodebuilder-images` | images (PNG, JPEG, WebP, AVIF), files in the app |
 | `nodebuilder-icons` | icons (Lucide, Phosphor) and SVG with `Icon`; `bun run icons:add <names...>` writes their imports into `src/icons.ts` |
@@ -61,3 +66,18 @@ that support skills load them on their own; others should read the topic's skill
 
 Notes for agents about this app (conventions, commands, decisions) go here, after the marker
 above: `nodebuilder agents update` replaces only the framework guide between the markers.
+
+- App state comes from context (`src/context.ts`): `useWorkspace()`, `useUi()`, `useCalendars()`
+  in the component body, provided once in `App.tsx`. Don't pass `ws`/`ui`/`cals` as props.
+- Colors by name, never `() => colors.x` / `() => theme.x` in JSX: `background="sidebar"`,
+  `color="text.secondary"`, conditionals as `color={() => (on() ? "accent.base" : "faint")}`.
+  App tokens (light and dark, shadows included) live in `src/theme.ts`; code that needs the
+  value itself (Canvas drawing, string concatenation like `tint()`) reads `colors.x`. Write
+  `"transparent"`, not `"#00000000"`.
+- Every theme color is `oklch()` for Display P3. Without a P3 surface, `src/color.ts` maps them
+  into sRGB (chroma scaled by sRGB edge / P3 edge, never clipped), which gives back the
+  original hex palette exactly. New colors: design in hex, convert with that same rule
+  (chroma × P3 edge / sRGB edge) and check `toSrgb()` returns the hex (`test/color.test.ts`).
+- Secondary text: `<Text variant="muted">` (same size), `"caption"` (12 px) or `"small"` (11 px,
+  defined in `theme.ts`); or set `color`/`fontSize` once on the container (they inherit).
+- Hover is `hoverStyle`, never a signal + pointer events.
